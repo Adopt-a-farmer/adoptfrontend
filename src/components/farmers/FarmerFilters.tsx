@@ -26,7 +26,7 @@ const FarmerFilters = ({ onFilterChange }: FarmerFiltersProps) => {
   const [filters, setFilters] = useState({
     county: 'all',
     cropType: 'all',
-    fundingProgress: '',
+    fundingProgress: 'any',
     fundingAmount: [0, 2000] // Min and max funding in USD
   });
 
@@ -46,7 +46,7 @@ const FarmerFilters = ({ onFilterChange }: FarmerFiltersProps) => {
     const resetFilters = {
       county: 'all',
       cropType: 'all',
-      fundingProgress: '',
+      fundingProgress: 'any',
       fundingAmount: [0, 2000]
     };
     setFilters(resetFilters);
@@ -111,7 +111,7 @@ const FarmerFilters = ({ onFilterChange }: FarmerFiltersProps) => {
                 <SelectValue placeholder="Select progress level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any Progress</SelectItem>
+                <SelectItem value="any">Any Progress</SelectItem>
                 <SelectItem value="low">Low (0-30%)</SelectItem>
                 <SelectItem value="medium">Medium (30-70%)</SelectItem>
                 <SelectItem value="high">High (70-100%)</SelectItem>

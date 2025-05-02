@@ -33,7 +33,7 @@ const BrowseFarmers = () => {
         }
         
         // Filter by funding progress if selected
-        if (filters.fundingProgress) {
+        if (filters.fundingProgress && filters.fundingProgress !== 'any') {
           const progress = (farmer.fundingRaised / farmer.fundingGoal) * 100;
           if (filters.fundingProgress === 'low' && progress > 30) return false;
           if (filters.fundingProgress === 'medium' && (progress <= 30 || progress > 70)) return false;
