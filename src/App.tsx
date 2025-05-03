@@ -19,6 +19,7 @@ import Register from "./pages/auth/Register";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import FarmersManagement from "./pages/admin/FarmersManagement";
+import AdoptersManagement from "./pages/admin/AdoptersManagement";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -45,7 +46,7 @@ const App = () => (
             <Route 
               path="/dashboard/farmers" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireFarmer={true}>
                   <FarmerDashboard />
                 </ProtectedRoute>
               } 
@@ -62,7 +63,7 @@ const App = () => (
             >
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="farmers" element={<FarmersManagement />} />
-              <Route path="adopters" element={<div>Adopters Management</div>} />
+              <Route path="adopters" element={<AdoptersManagement />} />
               <Route path="payments" element={<div>Payments Management</div>} />
               <Route path="suppliers" element={<div>Suppliers Management</div>} />
               <Route path="reports" element={<div>Reports</div>} />

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
 
@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -35,7 +36,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // If session changes, we need to fetch the profile again
         if (currentSession?.user) {
           setTimeout(() => {
             fetchProfile(currentSession.user.id);
@@ -61,6 +61,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Redirect after authentication
+  useEffect(() => {
+    if (!loading && user && profile) {
+      // Don't redirect if already on an auth page
+      if (location.pathname.includes('/auth/')) {
+        if (isAdmin) {
+          navigate('/admin/dashboard');
+        } else if (profile.role === 'farmer') {
+          navigate('/dashboard/farmers');
+        } else {
+          navigate('/');
+        }
+      }
+    }
+  }, [loading, user, profile, navigate, location]);
+
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -84,7 +100,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -95,25 +112,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           description: error.message,
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      navigate('/admin/dashboard');
+      // The user profile will be fetched via onAuthStateChange
+      if (data.user) {
+        const profile = await fetchProfile(data.user.id);
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+
+        if (profile?.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (profile?.role === 'farmer') {
+          navigate('/dashboard/farmers');
+        } else {
+          navigate('/');
+        }
+      }
+      setLoading(false);
     } catch (error: any) {
       toast({
         title: "Login failed",
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -130,6 +163,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           description: error.message,
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
@@ -138,27 +172,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Please check your email to verify your account.",
       });
       navigate('/auth/login');
+      setLoading(false);
     } catch (error: any) {
       toast({
         title: "Signup failed",
         description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          title: "Error signing out",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-      
+      await supabase.auth.signOut();
       toast({
         title: "Signed out successfully",
       });

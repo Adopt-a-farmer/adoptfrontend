@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -23,7 +25,11 @@ const formSchema = z.object({
 });
 
 const Login = () => {
-  const { signIn } = useAuth();
+  const { signIn, user, loading } = useAuth();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const redirectTo = queryParams.get('redirect') || '/';
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,8 +40,35 @@ const Login = () => {
   });
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    await signIn(values.email, values.password);
+    setErrorMessage(null);
+    try {
+      await signIn(values.email, values.password);
+      // Redirect is handled in AuthContext
+    } catch (error: any) {
+      setErrorMessage(error.message || 'An error occurred during login');
+    }
   };
+
+  // If already logged in, don't show the login form
+  if (user && !loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Already Logged In</CardTitle>
+            <CardDescription>
+              You are already logged in.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Link to="/">
+              <Button>Go to Home</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -47,6 +80,12 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -75,8 +114,19 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={form.formState.isSubmitting || loading}
+              >
+                {form.formState.isSubmitting || loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </Button>
             </form>
           </Form>

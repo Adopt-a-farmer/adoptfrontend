@@ -1,42 +1,23 @@
 
-import React, { useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const AdminLayout = () => {
-  const { user, profile, loading, isAdmin } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to access the admin area",
-        variant: "destructive",
-      });
-      navigate('/auth/login');
-    } else if (!loading && user && profile && !isAdmin) {
-      toast({
-        title: "Access denied",
-        description: "You do not have permission to access the admin area",
-        variant: "destructive",
-      });
-      navigate('/');
-    }
-  }, [user, loading, profile, isAdmin, navigate, toast]);
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
+  // Auth check handled by ProtectedRoute component
   if (!user || !isAdmin) {
     return null;
   }
