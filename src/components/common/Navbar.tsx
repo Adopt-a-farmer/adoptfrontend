@@ -2,102 +2,190 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, profile, signOut, isAdmin } = useAuth();
 
   return (
-    <nav className="bg-white shadow-sm py-4 sticky top-0 z-50">
+    <header className="bg-white shadow">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-full bg-farmer-primary flex items-center justify-center">
-              <span className="text-white font-bold">A</span>
-            </div>
-            <span className="font-heading font-bold text-xl text-farmer-primary">Adopt-A-Farmer</span>
-          </Link>
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-farmer-primary">FarmerFund</span>
+            </Link>
+          </div>
           
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/how-it-works" className="text-gray-700 hover:text-farmer-primary transition-colors">
-              How It Works
-            </Link>
-            <Link to="/browse-farmers" className="text-gray-700 hover:text-farmer-primary transition-colors">
-              Browse Farmers
-            </Link>
-            <div className="relative group">
-              <button className="flex items-center text-gray-700 hover:text-farmer-primary transition-colors">
-                Resources <ChevronDown className="ml-1 h-4 w-4" />
-              </button>
-              <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-                <div className="py-1">
-                  <Link to="/success-stories" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Success Stories</Link>
-                  <Link to="/knowledge-hub" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Knowledge Hub</Link>
-                  <Link to="/faq" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">FAQ</Link>
-                </div>
-              </div>
-            </div>
+          <div className="hidden md:block">
+            <nav className="ml-10 flex items-center space-x-4">
+              <Link to="/" className="px-3 py-2 text-sm font-medium text-gray-900 hover:text-farmer-primary">
+                Home
+              </Link>
+              <Link to="/browse-farmers" className="px-3 py-2 text-sm font-medium text-gray-900 hover:text-farmer-primary">
+                Browse Farmers
+              </Link>
+              <Link to="/how-it-works" className="px-3 py-2 text-sm font-medium text-gray-900 hover:text-farmer-primary">
+                How It Works
+              </Link>
+            </nav>
+          </div>
+
+          <div className="hidden md:block">
             <div className="flex items-center space-x-4">
-              <Link to="/login">
-                <Button variant="outline" className="border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
-                  Log In
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button className="bg-farmer-primary text-white hover:bg-farmer-primary/90">
-                  Sign Up
-                </Button>
-              </Link>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar>
+                        <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
+                        <AvatarFallback>
+                          {profile?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      <div>{profile?.full_name || 'User'}</div>
+                      <div className="text-xs font-normal text-gray-500">{user?.email}</div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard">Admin Dashboard</Link>
+                      </DropdownMenuItem>
+                    )}
+                    {profile?.role === 'farmer' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard/farmers">Farmer Dashboard</Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()}>
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Link to="/auth/login">
+                    <Button variant="ghost">Log in</Button>
+                  </Link>
+                  <Link to="/auth/register">
+                    <Button>Sign up</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="flex md:hidden">
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-700 focus:outline-none"
+              type="button"
+              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+              onClick={() => setIsOpen(!isOpen)}
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              <span className="sr-only">Open main menu</span>
+              {isOpen ? (
+                <X className="block h-6 w-6" />
+              ) : (
+                <Menu className="block h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 py-2 border-t border-gray-200 animate-fade-in">
-            <Link to="/how-it-works" className="block py-2 text-gray-700 hover:text-farmer-primary">
-              How It Works
+      {/* Mobile menu */}
+      {isOpen && (
+        <div className="md:hidden">
+          <div className="space-y-1 px-2 pb-3 pt-2">
+            <Link
+              to="/"
+              className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+              onClick={() => setIsOpen(false)}
+            >
+              Home
             </Link>
-            <Link to="/browse-farmers" className="block py-2 text-gray-700 hover:text-farmer-primary">
+            <Link
+              to="/browse-farmers"
+              className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+              onClick={() => setIsOpen(false)}
+            >
               Browse Farmers
             </Link>
-            <Link to="/success-stories" className="block py-2 text-gray-700 hover:text-farmer-primary">
-              Success Stories
+            <Link
+              to="/how-it-works"
+              className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+              onClick={() => setIsOpen(false)}
+            >
+              How It Works
             </Link>
-            <Link to="/knowledge-hub" className="block py-2 text-gray-700 hover:text-farmer-primary">
-              Knowledge Hub
-            </Link>
-            <Link to="/faq" className="block py-2 text-gray-700 hover:text-farmer-primary">
-              FAQ
-            </Link>
-            <div className="mt-4 space-y-2">
-              <Link to="/login" className="block">
-                <Button variant="outline" className="w-full border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
-                  Log In
-                </Button>
-              </Link>
-              <Link to="/signup" className="block">
-                <Button className="w-full bg-farmer-primary text-white hover:bg-farmer-primary/90">
-                  Sign Up
-                </Button>
-              </Link>
-            </div>
+            
+            {user ? (
+              <>
+                {isAdmin && (
+                  <Link
+                    to="/admin/dashboard"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+                {profile?.role === 'farmer' && (
+                  <Link
+                    to="/dashboard/farmers"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Farmer Dashboard
+                  </Link>
+                )}
+                <button
+                  className="block w-full rounded-md px-3 py-2 text-left text-base font-medium text-gray-900 hover:bg-gray-50"
+                  onClick={() => {
+                    signOut();
+                    setIsOpen(false);
+                  }}
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/auth/login"
+                  className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/auth/register"
+                  className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
-        )}
-      </div>
-    </nav>
+        </div>
+      )}
+    </header>
   );
 };
 

@@ -11,24 +11,70 @@ import BrowseFarmers from "./pages/BrowseFarmers";
 import FarmerDetail from "./pages/FarmerDetail";
 import FarmerDashboard from "./pages/FarmerDashboard";
 
+// Auth pages
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+
+// Admin pages
+import AdminLayout from "./components/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import FarmersManagement from "./pages/admin/FarmersManagement";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/how-it-works" element={<HowItWorksPage />} />
-          <Route path="/browse-farmers" element={<BrowseFarmers />} />
-          <Route path="/farmers/:id" element={<FarmerDetail />} />
-          <Route path="/dashboard/farmers" element={<FarmerDashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <Route path="/browse-farmers" element={<BrowseFarmers />} />
+            <Route path="/farmers/:id" element={<FarmerDetail />} />
+            
+            {/* Auth Routes */}
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+
+            {/* Regular Farmer Dashboard */}
+            <Route 
+              path="/dashboard/farmers" 
+              element={
+                <ProtectedRoute>
+                  <FarmerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin Routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="farmers" element={<FarmersManagement />} />
+              <Route path="adopters" element={<div>Adopters Management</div>} />
+              <Route path="payments" element={<div>Payments Management</div>} />
+              <Route path="suppliers" element={<div>Suppliers Management</div>} />
+              <Route path="reports" element={<div>Reports</div>} />
+              <Route path="analytics" element={<div>Analytics</div>} />
+              <Route path="settings" element={<div>Settings</div>} />
+            </Route>
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
