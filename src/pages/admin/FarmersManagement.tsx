@@ -41,6 +41,7 @@ const FarmersManagement = () => {
       
       if (error) throw error;
       
+      // Convert the data to match our updated Farmer type
       setFarmers(data as Farmer[]);
     } catch (error: any) {
       console.error('Error fetching farmers:', error);
@@ -154,11 +155,11 @@ const FarmersManagement = () => {
                         <TableCell>
                           <div className="min-w-[150px]">
                             <div className="flex justify-between text-xs mb-1">
-                              <span>${farmer.fundingRaised.toFixed(2)}</span>
-                              <span>${farmer.fundingGoal.toFixed(2)}</span>
+                              <span>${farmer.fundingraised.toFixed(2)}</span>
+                              <span>${farmer.fundinggoal.toFixed(2)}</span>
                             </div>
                             <Progress 
-                              value={(farmer.fundingRaised / farmer.fundingGoal) * 100}
+                              value={(farmer.fundingraised / farmer.fundinggoal) * 100}
                               className="h-2"
                             />
                           </div>

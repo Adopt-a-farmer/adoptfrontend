@@ -64,11 +64,11 @@ const Dashboard = () => {
       // Process farmers data for pie chart
       const { data: farmersWithFunding } = await supabase
         .from('farmers')
-        .select('location, fundingRaised');
+        .select('location, fundingraised');
       
       const fundingByLocation: Record<string, number> = {};
       farmersWithFunding?.forEach(farmer => {
-        fundingByLocation[farmer.location] = (fundingByLocation[farmer.location] || 0) + farmer.fundingRaised;
+        fundingByLocation[farmer.location] = (fundingByLocation[farmer.location] || 0) + farmer.fundingraised;
       });
       
       const formattedFarmersData = Object.keys(fundingByLocation).map(key => ({

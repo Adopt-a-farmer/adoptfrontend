@@ -17,8 +17,8 @@ export type Farmer = {
   description: string | null;
   crops: string[];
   farming_experience_years: number | null;
-  fundingGoal: number;
-  fundingRaised: number;
+  fundinggoal: number;
+  fundingraised: number;
   supporters: number;
   featured: boolean;
   image_url: string | null;
