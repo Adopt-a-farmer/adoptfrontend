@@ -187,15 +187,21 @@ const FarmersManagement = () => {
   
   const handleAddFarmer = async (data: FarmerFormValues) => {
     try {
+      // Fix: Ensure we're passing a single object with all required fields
       const { error } = await supabase
         .from('farmers')
-        .insert([
-          { 
-            ...data,
-            fundingraised: 0,
-            supporters: 0
-          }
-        ]);
+        .insert({
+          name: data.name,
+          location: data.location,
+          description: data.description || null,
+          crops: data.crops,
+          farming_experience_years: data.farming_experience_years,
+          fundinggoal: data.fundinggoal,
+          fundingraised: 0,
+          supporters: 0,
+          featured: data.featured,
+          image_url: data.image_url
+        });
       
       if (error) throw error;
       
@@ -222,9 +228,19 @@ const FarmersManagement = () => {
     if (!editingFarmer) return;
     
     try {
+      // Fix: Ensure we're passing a single object with all required fields
       const { error } = await supabase
         .from('farmers')
-        .update(data)
+        .update({
+          name: data.name,
+          location: data.location,
+          description: data.description || null,
+          crops: data.crops,
+          farming_experience_years: data.farming_experience_years,
+          fundinggoal: data.fundinggoal,
+          featured: data.featured,
+          image_url: data.image_url
+        })
         .eq('id', editingFarmer.id);
       
       if (error) throw error;
