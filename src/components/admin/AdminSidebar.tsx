@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useMediaQuery } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const sidebarItems = [
   {
@@ -60,7 +60,7 @@ const sidebarItems = [
 
 const AdminSidebar = () => {
   const location = useLocation();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useIsMobile();
   
   return (
     <div className={`flex flex-col bg-gray-800 text-white transition-all duration-300 ${isMobile ? 'w-16' : 'w-64'}`}>
