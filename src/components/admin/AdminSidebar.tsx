@@ -12,6 +12,8 @@ import {
   FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useMediaQuery } from '@/hooks/use-mobile';
 
 const sidebarItems = [
   {
@@ -58,29 +60,55 @@ const sidebarItems = [
 
 const AdminSidebar = () => {
   const location = useLocation();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
   return (
-    <div className="flex w-64 flex-col bg-gray-800 text-white">
+    <div className={`flex flex-col bg-gray-800 text-white transition-all duration-300 ${isMobile ? 'w-16' : 'w-64'}`}>
       <div className="flex h-16 items-center justify-center border-b border-gray-700">
-        <h1 className="text-xl font-bold">Admin Dashboard</h1>
+        {!isMobile ? (
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>
+        ) : (
+          <h1 className="text-xl font-bold">AD</h1>
+        )}
       </div>
       
       <nav className="flex-1 p-4">
         <ul className="space-y-1.5">
-          {sidebarItems.map((item) => (
-            <li key={item.href}>
-              <Link
-                to={item.href}
-                className={cn(
-                  "flex items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all hover:bg-gray-700",
-                  location.pathname === item.href ? "bg-gray-700" : "text-gray-300"
+          <TooltipProvider delayDuration={0}>
+            {sidebarItems.map((item) => (
+              <li key={item.href}>
+                {isMobile ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.href}
+                        className={cn(
+                          "flex items-center justify-center rounded-lg p-2.5 text-sm font-medium transition-all hover:bg-gray-700",
+                          location.pathname === item.href ? "bg-gray-700" : "text-gray-300"
+                        )}
+                      >
+                        {item.icon}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{item.title}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Link
+                    to={item.href}
+                    className={cn(
+                      "flex items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all hover:bg-gray-700",
+                      location.pathname === item.href ? "bg-gray-700" : "text-gray-300"
+                    )}
+                  >
+                    {item.icon}
+                    <span className="ml-3">{item.title}</span>
+                  </Link>
                 )}
-              >
-                {item.icon}
-                <span className="ml-3">{item.title}</span>
-              </Link>
-            </li>
-          ))}
+              </li>
+            ))}
+          </TooltipProvider>
         </ul>
       </nav>
     </div>

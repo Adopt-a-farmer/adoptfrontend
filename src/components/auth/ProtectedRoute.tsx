@@ -18,7 +18,7 @@ const ProtectedRoute = ({
   requireAdmin = false,
   requireFarmer = false 
 }: ProtectedRouteProps) => {
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
 
@@ -29,7 +29,7 @@ const ProtectedRoute = ({
         description: "Please log in to access this page",
         variant: "destructive",
       });
-    } else if (!loading && requireAdmin && profile && profile.role !== 'admin') {
+    } else if (!loading && requireAdmin && profile?.role !== 'admin') {
       toast({
         title: "Access denied",
         description: "You do not have permission to access this page",
@@ -57,7 +57,7 @@ const ProtectedRoute = ({
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} />;
   }
 
-  if (requireAdmin && profile && profile.role !== 'admin') {
+  if (requireAdmin && profile?.role !== 'admin') {
     return (
       <Card className="mx-auto max-w-md mt-10">
         <CardHeader>
