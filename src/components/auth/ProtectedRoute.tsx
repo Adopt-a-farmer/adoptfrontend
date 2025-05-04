@@ -29,7 +29,7 @@ const ProtectedRoute = ({
         description: "Please log in to access this page",
         variant: "destructive",
       });
-    } else if (!loading && requireAdmin && !isAdmin) {
+    } else if (!loading && requireAdmin && profile && profile.role !== 'admin') {
       toast({
         title: "Access denied",
         description: "You do not have permission to access this page",
@@ -42,7 +42,7 @@ const ProtectedRoute = ({
         variant: "destructive",
       });
     }
-  }, [user, loading, requireAdmin, requireFarmer, isAdmin, profile, toast]);
+  }, [user, loading, requireAdmin, requireFarmer, profile, toast]);
 
   if (loading) {
     return (
@@ -57,7 +57,7 @@ const ProtectedRoute = ({
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} />;
   }
 
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin && profile && profile.role !== 'admin') {
     return (
       <Card className="mx-auto max-w-md mt-10">
         <CardHeader>

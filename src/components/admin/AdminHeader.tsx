@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Search, User, LayoutDashboard, Leaf, Users, CreditCard, PackageOpen, FileText, BarChart3, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Link } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,14 +49,73 @@ const AdminHeader = () => {
               <DropdownMenuLabel>
                 <div>{profile?.full_name || 'User'}</div>
                 <div className="text-xs font-normal text-gray-500">{user?.email}</div>
+                {profile?.role === 'admin' && (
+                  <div className="text-xs font-medium text-green-600 mt-1">Admin</div>
+                )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Profile
+              
+              {/* Admin Navigation Items */}
+              <DropdownMenuItem asChild>
+                <Link to="/admin/dashboard" className="flex items-center cursor-pointer">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Link>
               </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/farmers" className="flex items-center cursor-pointer">
+                  <Leaf className="mr-2 h-4 w-4" />
+                  Farmers
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/adopters" className="flex items-center cursor-pointer">
+                  <Users className="mr-2 h-4 w-4" />
+                  Adopters
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/payments" className="flex items-center cursor-pointer">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Payments
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/suppliers" className="flex items-center cursor-pointer">
+                  <PackageOpen className="mr-2 h-4 w-4" />
+                  Suppliers
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/reports" className="flex items-center cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Reports
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/analytics" className="flex items-center cursor-pointer">
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Analytics
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/admin/settings" className="flex items-center cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut()}>
+              
+              <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

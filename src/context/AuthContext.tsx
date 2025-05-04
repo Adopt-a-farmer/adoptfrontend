@@ -66,7 +66,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!loading && user && profile) {
       // Don't redirect if already on an auth page
       if (location.pathname.includes('/auth/')) {
-        if (isAdmin) {
+        // Updated: Redirect admin users directly to admin dashboard
+        if (profile.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (profile.role === 'farmer') {
           navigate('/dashboard/farmers');
@@ -125,6 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           description: "Welcome back!",
         });
 
+        // Updated: Redirect admin users directly to admin dashboard
         if (profile?.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (profile?.role === 'farmer') {
