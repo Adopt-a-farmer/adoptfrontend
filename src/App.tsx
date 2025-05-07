@@ -46,17 +46,17 @@ const App = () => (
             <Route 
               path="/dashboard/farmers" 
               element={
-                <ProtectedRoute requireFarmer={true}>
+                <ProtectedRoute>
                   <FarmerDashboard />
                 </ProtectedRoute>
               } 
             />
             
-            {/* Admin Routes */}
+            {/* Admin Routes - Remove the requireAdmin restriction */}
             <Route 
               path="/admin" 
               element={
-                <ProtectedRoute requireAdmin={true}>
+                <ProtectedRoute>
                   <AdminLayout />
                 </ProtectedRoute>
               }

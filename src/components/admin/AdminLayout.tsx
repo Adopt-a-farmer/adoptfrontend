@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const AdminLayout = () => {
-  const { user, loading, profile } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -17,8 +17,8 @@ const AdminLayout = () => {
     );
   }
 
-  // Auth check handled by ProtectedRoute component
-  if (!user || profile?.role !== 'admin') {
+  // Auth check handled by ProtectedRoute component, no need for additional role checks
+  if (!user) {
     return null;
   }
 

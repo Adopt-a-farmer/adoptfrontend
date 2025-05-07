@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -61,22 +60,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Redirect after authentication
-  useEffect(() => {
-    if (!loading && user && profile) {
-      // Don't redirect if already on an auth page
-      if (location.pathname.includes('/auth/')) {
-        // Updated: Redirect admin users directly to admin dashboard
-        if (profile.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (profile.role === 'farmer') {
-          navigate('/dashboard/farmers');
-        } else {
-          navigate('/');
-        }
-      }
-    }
-  }, [loading, user, profile, navigate, location]);
+  // Remove automatic redirect after authentication
+  // We'll handle redirects explicitly in signIn method
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -126,14 +111,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           description: "Welcome back!",
         });
 
-        // Updated: Redirect admin users directly to admin dashboard
-        if (profile?.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (profile?.role === 'farmer') {
-          navigate('/dashboard/farmers');
-        } else {
-          navigate('/');
-        }
+        // Always redirect to admin dashboard after login
+        navigate('/admin/dashboard');
       }
       setLoading(false);
     } catch (error: any) {
@@ -206,7 +185,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return await fetchProfile(user.id);
   };
 
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = true; // Set everyone as admin for development
 
   return (
     <AuthContext.Provider

@@ -18,7 +18,7 @@ const ProtectedRoute = ({
   requireAdmin = false,
   requireFarmer = false 
 }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
 
@@ -29,20 +29,8 @@ const ProtectedRoute = ({
         description: "Please log in to access this page",
         variant: "destructive",
       });
-    } else if (!loading && requireAdmin && profile?.role !== 'admin') {
-      toast({
-        title: "Access denied",
-        description: "You do not have permission to access this page",
-        variant: "destructive",
-      });
-    } else if (!loading && requireFarmer && profile?.role !== 'farmer') {
-      toast({
-        title: "Access denied",
-        description: "This area is reserved for farmers",
-        variant: "destructive",
-      });
     }
-  }, [user, loading, requireAdmin, requireFarmer, profile, toast]);
+  }, [user, loading, toast]);
 
   if (loading) {
     return (
@@ -57,38 +45,7 @@ const ProtectedRoute = ({
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} />;
   }
 
-  if (requireAdmin && profile?.role !== 'admin') {
-    return (
-      <Card className="mx-auto max-w-md mt-10">
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            You do not have admin privileges required to access this page.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <Button onClick={() => window.history.back()}>Go Back</Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (requireFarmer && profile?.role !== 'farmer') {
-    return (
-      <Card className="mx-auto max-w-md mt-10">
-        <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>
-            This area is restricted to farmers only.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <Button onClick={() => window.history.back()}>Go Back</Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // Remove admin and farmer role checks - allow all authenticated users
   return <>{children}</>;
 };
 
