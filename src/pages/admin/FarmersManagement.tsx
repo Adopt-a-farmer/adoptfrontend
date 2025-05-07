@@ -1,400 +1,81 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Farmer } from '@/types';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Edit, 
-  MoreHorizontal, 
-  Plus, 
-  Search, 
-  Trash, 
-  X, 
-  Check,
-  Eye 
-} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-
-// Kenyan counties data
-const kenyaCounties = [
-  "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo Marakwet", "Embu", "Garissa", 
-  "Homa Bay", "Isiolo", "Kajiado", "Kakamega", "Kericho", "Kiambu", "Kilifi", 
-  "Kirinyaga", "Kisii", "Kisumu", "Kitui", "Kwale", "Laikipia", "Lamu", "Machakos", 
-  "Makueni", "Mandera", "Marsabit", "Meru", "Migori", "Mombasa", "Murang'a", 
-  "Nairobi", "Nakuru", "Nandi", "Narok", "Nyamira", "Nyandarua", "Nyeri", "Samburu", 
-  "Siaya", "Taita Taveta", "Tana River", "Tharaka Nithi", "Trans Nzoia", "Turkana", 
-  "Uasin Gishu", "Vihiga", "Wajir", "West Pokot"
-];
-
-// Constituencies data mapped to counties
-const kenyaConstituencies: Record<string, string[]> = {
-  "Baringo": ["Baringo Central", "Baringo North", "Baringo South", "Eldama Ravine", "Mogotio", "Tiaty"],
-  "Bomet": ["Bomet Central", "Bomet East", "Chepalungu", "Konoin", "Sotik"],
-  "Bungoma": ["Bumula", "Kabuchai", "Kanduyi", "Kimilili", "Mt. Elgon", "Sirisia", "Tongaren", "Webuye East", "Webuye West"],
-  "Busia": ["Budalangi", "Butula", "Funyula", "Matayos", "Nambale", "Teso North", "Teso South"],
-  "Elgeyo Marakwet": ["Keiyo North", "Keiyo South", "Marakwet East", "Marakwet West"],
-  "Embu": ["Manyatta", "Mbeere North", "Mbeere South", "Runyenjes"],
-  "Garissa": ["Balambala", "Dadaab", "Fafi", "Garissa Township", "Ijara", "Lagdera"],
-  "Homa Bay": ["Homa Bay Town", "Kabondo Kasipul", "Karachuonyo", "Kasipul", "Mbita", "Ndhiwa", "Rangwe", "Suba"],
-  "Isiolo": ["Isiolo North", "Isiolo South"],
-  "Kajiado": ["Kajiado Central", "Kajiado East", "Kajiado North", "Kajiado South", "Kajiado West"],
-  "Kakamega": ["Butere", "Ikolomani", "Khwisero", "Likuyani", "Lugari", "Lurambi", "Malava", "Matungu", "Mumias East", "Mumias West", "Navakholo", "Shinyalu"],
-  "Kericho": ["Ainamoi", "Belgut", "Bureti", "Kipkelion East", "Kipkelion West", "Sigowet/Soin"],
-  "Kiambu": ["Gatundu North", "Gatundu South", "Githunguri", "Juja", "Kabete", "Kiambaa", "Kiambu", "Kikuyu", "Limuru", "Ruiru", "Thika Town", "Lari"],
-  "Kilifi": ["Ganze", "Kaloleni", "Kilifi North", "Kilifi South", "Magarini", "Malindi", "Rabai"],
-  "Kirinyaga": ["Gichugu", "Kirinyaga Central", "Mwea", "Ndia"],
-  "Kisii": ["Bobasi", "Bomachoge Borabu", "Bomachoge Chache", "Bonchari", "Kitutu Chache North", "Kitutu Chache South", "Nyaribari Chache", "Nyaribari Masaba", "South Mugirango"],
-  "Kisumu": ["Kisumu Central", "Kisumu East", "Kisumu West", "Muhoroni", "Nyakach", "Nyando", "Seme"],
-  "Kitui": ["Kitui Central", "Kitui East", "Kitui Rural", "Kitui South", "Kitui West", "Mwingi Central", "Mwingi North", "Mwingi West"],
-  "Nairobi": ["Dagoretti North", "Dagoretti South", "Embakasi Central", "Embakasi East", "Embakasi North", "Embakasi South", "Embakasi West", "Kamukunji", "Kasarani", "Kibra", "Langata", "Makadara", "Mathare", "Roysambu", "Ruaraka", "Starehe", "Westlands"]
-  // Add more counties and their constituencies...
-};
-
-const farmerFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  location: z.string().min(2, { message: "Location is required" }),
-  county: z.string().min(1, { message: "County is required" }),
-  constituency: z.string().min(1, { message: "Constituency is required" }),
-  description: z.string().optional(),
-  crops: z.array(z.string()).min(1, { message: "Select at least one crop" }),
-  farming_experience_years: z.number().min(0).optional().nullable(),
-  fundinggoal: z.number().min(0, { message: "Funding goal must be a positive number" }),
-  featured: z.boolean().default(false),
-  image_url: z.string().optional().nullable(),
-});
-
-type FarmerFormValues = z.infer<typeof farmerFormSchema>;
-
-// Available crop options
-const cropOptions = [
-  "Corn", 
-  "Wheat", 
-  "Rice", 
-  "Soybeans", 
-  "Coffee", 
-  "Cotton", 
-  "Vegetables", 
-  "Fruits", 
-  "Tea", 
-  "Sugar"
-];
+import { Plus, Search } from 'lucide-react';
+import { Farmer } from '@/types';
+import { useFarmers } from '@/hooks/useFarmers';
+import FarmerTable from '@/components/admin/farmers/FarmerTable';
+import DeleteFarmerDialog from '@/components/admin/farmers/DeleteFarmerDialog';
+import FarmerFormDialog from '@/components/admin/farmers/FarmerFormDialog';
+import { FarmerFormValues } from '@/components/admin/farmers/FarmerForm';
 
 const FarmersManagement = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const {
+    farmers,
+    isLoading,
+    searchTerm,
+    setSearchTerm,
+    addFarmer,
+    updateFarmer,
+    deleteFarmer,
+    toggleFeatured
+  } = useFarmers();
+  
+  // UI state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingFarmer, setEditingFarmer] = useState<Farmer | null>(null);
   const [deletingFarmerId, setDeletingFarmerId] = useState<number | null>(null);
-  const [selectedCounty, setSelectedCounty] = useState<string>("");
-  const [constituencies, setConstituencies] = useState<string[]>([]);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+
+  // Event handlers
+  const handleOpenAddDialog = () => setIsAddDialogOpen(true);
   
-  const fetchFarmers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('farmers')
-        .select('*');
-      
-      if (error) throw error;
-      
-      return data as Farmer[];
-    } catch (error: any) {
-      console.error('Error fetching farmers:', error);
-      toast({
-        title: 'Error fetching farmers',
-        description: error.message,
-        variant: 'destructive',
-      });
-      return [];
+  const handleOpenEditDialog = (farmer: Farmer) => {
+    setEditingFarmer(farmer);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleOpenDeleteDialog = (id: number) => {
+    setDeletingFarmerId(id);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleCloseAddDialog = () => setIsAddDialogOpen(false);
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setEditingFarmer(null);
+  };
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    setDeletingFarmerId(null);
+  };
+  
+  // Form submission handlers
+  const handleAddSubmit = async (data: FarmerFormValues) => {
+    const success = await addFarmer(data);
+    if (success) {
+      handleCloseAddDialog();
     }
   };
   
-  const { data: farmers = [], isLoading } = useQuery({
-    queryKey: ['farmers'],
-    queryFn: fetchFarmers,
-  });
-  
-  const filteredFarmers = farmers.filter(farmer =>
-    farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  const addForm = useForm<FarmerFormValues>({
-    resolver: zodResolver(farmerFormSchema),
-    defaultValues: {
-      name: '',
-      location: '',
-      county: '',
-      constituency: '',
-      description: '',
-      crops: [],
-      farming_experience_years: null,
-      fundinggoal: 0,
-      featured: false,
-      image_url: null
-    },
-  });
-  
-  const editForm = useForm<FarmerFormValues>({
-    resolver: zodResolver(farmerFormSchema),
-    defaultValues: {
-      name: '',
-      location: '',
-      county: '',
-      constituency: '',
-      description: '',
-      crops: [],
-      farming_experience_years: null,
-      fundinggoal: 0,
-      featured: false,
-      image_url: null
-    },
-  });
-  
-  // Handle county selection in add form
-  const handleCountyChange = (value: string, formType: 'add' | 'edit') => {
-    const form = formType === 'add' ? addForm : editForm;
-    form.setValue('county', value);
-    form.setValue('constituency', ''); // Reset constituency when county changes
-    
-    const countyConstituencies = kenyaConstituencies[value] || [];
-    setConstituencies(countyConstituencies);
-  };
-  
-  useEffect(() => {
-    if (editingFarmer) {
-      // Extract county and constituency from location if it follows the format "County, Constituency"
-      let county = '';
-      let constituency = '';
-      
-      if (editingFarmer.location.includes(',')) {
-        const parts = editingFarmer.location.split(',');
-        county = parts[0].trim();
-        constituency = parts[1].trim();
-        
-        // Validate that the extracted county exists in our list
-        if (!kenyaCounties.includes(county)) {
-          county = '';
-          constituency = '';
-        } else {
-          // Set the constituencies for the selected county
-          setConstituencies(kenyaConstituencies[county] || []);
-        }
-      }
-      
-      editForm.reset({
-        name: editingFarmer.name,
-        location: editingFarmer.location,
-        county: county,
-        constituency: constituency,
-        description: editingFarmer.description || '',
-        crops: editingFarmer.crops || [],
-        farming_experience_years: editingFarmer.farming_experience_years,
-        fundinggoal: editingFarmer.fundinggoal,
-        featured: editingFarmer.featured,
-        image_url: editingFarmer.image_url,
-      });
-    }
-  }, [editingFarmer, editForm]);
-  
-  const handleAddFarmer = async (data: FarmerFormValues) => {
-    try {
-      // Combine county and constituency for the location field
-      const formattedLocation = `${data.county}, ${data.constituency}`;
-      
-      // Fix: Ensure we're passing a single object with all required fields
-      const { error } = await supabase
-        .from('farmers')
-        .insert({
-          name: data.name,
-          location: formattedLocation,
-          description: data.description || null,
-          crops: data.crops,
-          farming_experience_years: data.farming_experience_years,
-          fundinggoal: data.fundinggoal,
-          fundingraised: 0,
-          supporters: 0,
-          featured: data.featured,
-          image_url: data.image_url
-        });
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['farmers'] });
-      
-      toast({
-        title: 'Farmer added',
-        description: 'New farmer has been added successfully',
-      });
-      
-      setIsAddDialogOpen(false);
-      addForm.reset();
-    } catch (error: any) {
-      console.error('Error adding farmer:', error);
-      toast({
-        title: 'Error adding farmer',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  const handleUpdateFarmer = async (data: FarmerFormValues) => {
+  const handleEditSubmit = async (data: FarmerFormValues) => {
     if (!editingFarmer) return;
     
-    try {
-      // Combine county and constituency for the location field
-      const formattedLocation = `${data.county}, ${data.constituency}`;
-      
-      // Fix: Ensure we're passing a single object with all required fields
-      const { error } = await supabase
-        .from('farmers')
-        .update({
-          name: data.name,
-          location: formattedLocation,
-          description: data.description || null,
-          crops: data.crops,
-          farming_experience_years: data.farming_experience_years,
-          fundinggoal: data.fundinggoal,
-          featured: data.featured,
-          image_url: data.image_url
-        })
-        .eq('id', editingFarmer.id);
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['farmers'] });
-      
-      toast({
-        title: 'Farmer updated',
-        description: 'Farmer information has been updated successfully',
-      });
-      
-      setIsEditDialogOpen(false);
-      setEditingFarmer(null);
-    } catch (error: any) {
-      console.error('Error updating farmer:', error);
-      toast({
-        title: 'Error updating farmer',
-        description: error.message,
-        variant: 'destructive',
-      });
+    const success = await updateFarmer(editingFarmer.id, data);
+    if (success) {
+      handleCloseEditDialog();
     }
   };
   
-  const handleDeleteFarmer = async () => {
+  const handleDelete = async () => {
     if (!deletingFarmerId) return;
     
-    try {
-      const { error } = await supabase
-        .from('farmers')
-        .delete()
-        .eq('id', deletingFarmerId);
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['farmers'] });
-      
-      toast({
-        title: 'Farmer deleted',
-        description: 'Farmer has been deleted successfully',
-      });
-      
-      setIsDeleteDialogOpen(false);
-      setDeletingFarmerId(null);
-    } catch (error: any) {
-      console.error('Error deleting farmer:', error);
-      toast({
-        title: 'Error deleting farmer',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  const toggleFeatured = async (id: number, featured: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('farmers')
-        .update({ featured: !featured })
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['farmers'] });
-      
-      toast({
-        title: 'Farmer updated',
-        description: `Farmer has been ${!featured ? 'featured' : 'unfeatured'} successfully`,
-      });
-    } catch (error: any) {
-      console.error('Error updating farmer:', error);
-      toast({
-        title: 'Error updating farmer',
-        description: error.message,
-        variant: 'destructive',
-      });
+    const success = await deleteFarmer(deletingFarmerId);
+    if (success) {
+      handleCloseDeleteDialog();
     }
   };
   
@@ -402,7 +83,7 @@ const FarmersManagement = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Farmers Management</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Button onClick={handleOpenAddDialog}>
           <Plus className="mr-2 h-4 w-4" />
           Add Farmer
         </Button>
@@ -422,668 +103,43 @@ const FarmersManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex h-60 items-center justify-center">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Crops</TableHead>
-                    <TableHead>Funding Progress</TableHead>
-                    <TableHead>Supporters</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[80px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFarmers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center h-32">
-                        No farmers found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredFarmers.map((farmer) => (
-                      <TableRow key={farmer.id}>
-                        <TableCell className="font-medium">{farmer.name}</TableCell>
-                        <TableCell>{farmer.location}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {farmer.crops.slice(0, 2).map((crop, i) => (
-                              <Badge key={i} variant="outline">{crop}</Badge>
-                            ))}
-                            {farmer.crops.length > 2 && (
-                              <Badge variant="outline">+{farmer.crops.length - 2}</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="min-w-[150px]">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>${farmer.fundingraised.toFixed(2)}</span>
-                              <span>${farmer.fundinggoal.toFixed(2)}</span>
-                            </div>
-                            <Progress 
-                              value={(farmer.fundingraised / farmer.fundinggoal) * 100}
-                              className="h-2"
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell>{farmer.supporters}</TableCell>
-                        <TableCell>
-                          {farmer.featured ? (
-                            <Badge className="bg-amber-500 hover:bg-amber-600">Featured</Badge>
-                          ) : (
-                            <Badge variant="outline">Standard</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => {
-                                setEditingFarmer(farmer);
-                                setIsEditDialogOpen(true);
-                              }}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toggleFeatured(farmer.id, farmer.featured)}>
-                                {farmer.featured ? (
-                                  <>
-                                    <X className="mr-2 h-4 w-4" />
-                                    Remove Featured
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check className="mr-2 h-4 w-4" />
-                                    Mark as Featured
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <a href={`/farmers/${farmer.id}`} target="_blank">
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View Public Profile
-                                </a>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setDeletingFarmerId(farmer.id);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                                className="text-red-600"
-                              >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <FarmerTable 
+            farmers={farmers}
+            isLoading={isLoading}
+            onEdit={handleOpenEditDialog}
+            onDelete={handleOpenDeleteDialog}
+            toggleFeatured={toggleFeatured}
+          />
         </CardContent>
       </Card>
       
       {/* Add Farmer Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Farmer</DialogTitle>
-            <DialogDescription>
-              Create a new farmer profile in the system.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...addForm}>
-            <form onSubmit={addForm.handleSubmit(handleAddFarmer)} className="space-y-6">
-              <FormField
-                control={addForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Farmer name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={addForm.control}
-                  name="county"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>County</FormLabel>
-                      <Select
-                        onValueChange={(value) => handleCountyChange(value, 'add')}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select county" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {kenyaCounties.map((county) => (
-                            <SelectItem key={county} value={county}>
-                              {county}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={addForm.control}
-                  name="constituency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Constituency</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!addForm.watch('county')}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select constituency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {constituencies.map((constituency) => (
-                            <SelectItem key={constituency} value={constituency}>
-                              {constituency}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Keep the original location field as hidden or for additional address info */}
-              <FormField
-                control={addForm.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Specific Address/Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Additional location details" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Provide specific address or location information
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={addForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Farm description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={addForm.control}
-                  name="farming_experience_years"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Farming Experience (Years)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Years of experience" 
-                          {...field} 
-                          value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={addForm.control}
-                  name="fundinggoal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Funding Goal ($)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Funding goal" 
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={addForm.control}
-                name="image_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Image URL" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter a URL for the farmer's profile image
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={addForm.control}
-                name="crops"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-2">
-                      <FormLabel>Crops</FormLabel>
-                      <FormDescription>
-                        Select the crops this farmer cultivates
-                      </FormDescription>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {cropOptions.map((crop) => (
-                        <FormField
-                          key={crop}
-                          control={addForm.control}
-                          name="crops"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={crop}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(crop)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...field.value, crop])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== crop
-                                            )
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {crop}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={addForm.control}
-                name="featured"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Featured Farmer
-                      </FormLabel>
-                      <FormDescription>
-                        Featured farmers appear on the homepage
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Create Farmer</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <FarmerFormDialog
+        isOpen={isAddDialogOpen}
+        onClose={handleCloseAddDialog}
+        onSubmit={handleAddSubmit}
+        dialogTitle="Add New Farmer"
+        dialogDescription="Create a new farmer profile in the system."
+        submitLabel="Create Farmer"
+      />
       
       {/* Edit Farmer Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Farmer</DialogTitle>
-            <DialogDescription>
-              Update the farmer's information.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleUpdateFarmer)} className="space-y-6">
-              <FormField
-                control={editForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Farmer name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={editForm.control}
-                  name="county"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>County</FormLabel>
-                      <Select
-                        onValueChange={(value) => handleCountyChange(value, 'edit')}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select county" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {kenyaCounties.map((county) => (
-                            <SelectItem key={county} value={county}>
-                              {county}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={editForm.control}
-                  name="constituency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Constituency</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!editForm.watch('county')}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select constituency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {constituencies.map((constituency) => (
-                            <SelectItem key={constituency} value={constituency}>
-                              {constituency}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Keep the original location field as hidden or for additional address info */}
-              <FormField
-                control={editForm.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Specific Address/Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Additional location details" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Provide specific address or location information
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Farm description" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={editForm.control}
-                  name="farming_experience_years"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Farming Experience (Years)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Years of experience" 
-                          {...field} 
-                          value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={editForm.control}
-                  name="fundinggoal"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Funding Goal ($)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Funding goal" 
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={editForm.control}
-                name="image_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Image URL" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter a URL for the farmer's profile image
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="crops"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-2">
-                      <FormLabel>Crops</FormLabel>
-                      <FormDescription>
-                        Select the crops this farmer cultivates
-                      </FormDescription>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {cropOptions.map((crop) => (
-                        <FormField
-                          key={crop}
-                          control={editForm.control}
-                          name="crops"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={crop}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(crop)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...field.value, crop])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== crop
-                                            )
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {crop}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="featured"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Featured Farmer
-                      </FormLabel>
-                      <FormDescription>
-                        Featured farmers appear on the homepage
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingFarmer(null);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit">Update Farmer</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <FarmerFormDialog
+        isOpen={isEditDialogOpen}
+        onClose={handleCloseEditDialog}
+        onSubmit={handleEditSubmit}
+        farmer={editingFarmer}
+        dialogTitle="Edit Farmer"
+        dialogDescription="Update the farmer's information."
+        submitLabel="Update Farmer"
+      />
       
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the farmer
-              and all associated data from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingFarmerId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteFarmer}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteFarmerDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };
