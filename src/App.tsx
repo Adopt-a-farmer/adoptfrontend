@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import HowItWorksPage from "./pages/HowItWorks";
@@ -42,17 +42,13 @@ const App = () => (
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
 
-            {/* Regular Farmer Dashboard */}
+            {/* Redirect /dashboard/farmers to /admin/farmers for consistency */}
             <Route 
               path="/dashboard/farmers" 
-              element={
-                <ProtectedRoute>
-                  <FarmerDashboard />
-                </ProtectedRoute>
-              } 
+              element={<Navigate to="/admin/farmers" replace />} 
             />
             
-            {/* Admin Routes - Remove the requireAdmin restriction */}
+            {/* Admin Routes */}
             <Route 
               path="/admin" 
               element={

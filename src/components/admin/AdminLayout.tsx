@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -17,7 +18,7 @@ const AdminLayout = () => {
     );
   }
 
-  // Auth check handled by ProtectedRoute component, no need for additional role checks
+  // If no user is logged in, redirect to login page
   if (!user) {
     return null;
   }
