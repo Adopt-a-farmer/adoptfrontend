@@ -6,19 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { MapPin, Users, Leaf } from 'lucide-react';
-
-interface Farmer {
-  id: number;
-  name: string;
-  location: string;
-  image: string;
-  description: string;
-  fundingGoal: number;
-  fundingRaised: number;
-  supporters: number;
-  crops: string[];
-  featured?: boolean;
-}
+import { Farmer } from '@/types';
 
 interface FarmersListProps {
   farmers: Farmer[];
@@ -55,7 +43,7 @@ const FarmersList = ({ farmers, isLoading }: FarmersListProps) => {
         <Card key={farmer.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
           <div className="relative h-48">
             <img 
-              src={farmer.image} 
+              src={farmer.image_url || 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'} 
               alt={farmer.name} 
               className="object-cover w-full h-full"
             />
@@ -89,12 +77,12 @@ const FarmersList = ({ farmers, isLoading }: FarmersListProps) => {
             <div className="mt-4">
               <div className="flex justify-between text-sm mb-1">
                 <span>Funding Progress</span>
-                <span className="font-medium">{Math.round((farmer.fundingRaised / farmer.fundingGoal) * 100)}%</span>
+                <span className="font-medium">{Math.round((farmer.fundingraised / farmer.fundinggoal) * 100)}%</span>
               </div>
-              <Progress value={(farmer.fundingRaised / farmer.fundingGoal) * 100} className="h-2" />
+              <Progress value={(farmer.fundingraised / farmer.fundinggoal) * 100} className="h-2" />
               <div className="flex justify-between text-sm mt-1">
-                <span>${farmer.fundingRaised} raised</span>
-                <span>Goal: ${farmer.fundingGoal}</span>
+                <span>${farmer.fundingraised} raised</span>
+                <span>Goal: ${farmer.fundinggoal}</span>
               </div>
             </div>
             

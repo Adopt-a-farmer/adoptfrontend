@@ -22,8 +22,58 @@ import FarmersManagement from "./pages/admin/FarmersManagement";
 import AdoptersManagement from "./pages/admin/AdoptersManagement";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { seedFarmers } from "./utils/seedFarmers";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  useEffect(() => {
+    // Seed farmers when app loads
+    seedFarmers();
+  }, []);
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/how-it-works" element={<HowItWorksPage />} />
+      <Route path="/browse-farmers" element={<BrowseFarmers />} />
+      <Route path="/farmers/:id" element={<FarmerDetail />} />
+      
+      {/* Auth Routes */}
+      <Route path="/auth/login" element={<Login />} />
+      <Route path="/auth/register" element={<Register />} />
+
+      {/* Redirect /dashboard/farmers to /admin/farmers for consistency */}
+      <Route 
+        path="/dashboard/farmers" 
+        element={<Navigate to="/admin/farmers" replace />} 
+      />
+      
+      {/* Admin Routes */}
+      <Route 
+        path="/admin" 
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="farmers" element={<FarmersManagement />} />
+        <Route path="adopters" element={<AdoptersManagement />} />
+        <Route path="payments" element={<div>Payments Management</div>} />
+        <Route path="suppliers" element={<div>Suppliers Management</div>} />
+        <Route path="reports" element={<div>Reports</div>} />
+        <Route path="analytics" element={<div>Analytics</div>} />
+        <Route path="settings" element={<div>Settings</div>} />
+      </Route>
+      
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -32,44 +82,7 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/how-it-works" element={<HowItWorksPage />} />
-            <Route path="/browse-farmers" element={<BrowseFarmers />} />
-            <Route path="/farmers/:id" element={<FarmerDetail />} />
-            
-            {/* Auth Routes */}
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-
-            {/* Redirect /dashboard/farmers to /admin/farmers for consistency */}
-            <Route 
-              path="/dashboard/farmers" 
-              element={<Navigate to="/admin/farmers" replace />} 
-            />
-            
-            {/* Admin Routes */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="farmers" element={<FarmersManagement />} />
-              <Route path="adopters" element={<AdoptersManagement />} />
-              <Route path="payments" element={<div>Payments Management</div>} />
-              <Route path="suppliers" element={<div>Suppliers Management</div>} />
-              <Route path="reports" element={<div>Reports</div>} />
-              <Route path="analytics" element={<div>Analytics</div>} />
-              <Route path="settings" element={<div>Settings</div>} />
-            </Route>
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppContent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
