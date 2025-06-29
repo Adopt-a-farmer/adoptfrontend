@@ -14,27 +14,36 @@ const BrowseFarmers = () => {
     let filtered = [...farmers];
     
     // Apply location filter
-    if (filters.location && filters.location !== 'all') {
+    if (filters.county && filters.county !== 'all') {
       filtered = filtered.filter(farmer => 
-        farmer.location.toLowerCase().includes(filters.location.toLowerCase())
+        farmer.location.toLowerCase().includes(filters.county.toLowerCase())
       );
     }
     
     // Apply crop filter
-    if (filters.crop && filters.crop !== 'all') {
+    if (filters.cropType && filters.cropType !== 'all') {
       filtered = filtered.filter(farmer => 
         farmer.crops.some(crop => 
-          crop.toLowerCase().includes(filters.crop.toLowerCase())
+          crop.toLowerCase().includes(filters.cropType.toLowerCase())
         )
       );
     }
     
-    // Apply search filter
-    if (filters.search) {
-      filtered = filtered.filter(farmer =>
-        farmer.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        farmer.description?.toLowerCase().includes(filters.search.toLowerCase())
-      );
+    // Apply funding progress filter
+    if (filters.fundingProgress && filters.fundingProgress !== 'any') {
+      filtered = filtered.filter(farmer => {
+        const progress = (farmer.fundingraised / farmer.fundinggoal) * 100;
+        switch (filters.fundingProgress) {
+          case 'low':
+            return progress >= 0 && progress < 30;
+          case 'medium':
+            return progress >= 30 && progress < 70;
+          case 'high':
+            return progress >= 70 && progress <= 100;
+          default:
+            return true;
+        }
+      });
     }
     
     setFilteredFarmers(filtered);
@@ -60,7 +69,7 @@ const BrowseFarmers = () => {
         </div>
         
         <div className="mb-8">
-          <FarmerFilters onFiltersChange={handleFiltersChange} />
+          <FarmerFilters onFilterChange={handleFiltersChange} />
         </div>
         
         <FarmersList farmers={filteredFarmers} isLoading={isLoading} />
