@@ -20,6 +20,10 @@ import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import FarmersManagement from "./pages/admin/FarmersManagement";
 import AdoptersManagement from "./pages/admin/AdoptersManagement";
+
+// Adopter pages
+import AdopterDashboard from "./pages/adopter/AdopterDashboard";
+
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { seedFarmers } from "./utils/seedFarmers";
@@ -68,6 +72,16 @@ const AppContent = () => {
         <Route path="analytics" element={<div>Analytics</div>} />
         <Route path="settings" element={<div>Settings</div>} />
       </Route>
+
+      {/* Adopter Routes */}
+      <Route 
+        path="/adopter/*" 
+        element={
+          <ProtectedRoute>
+            <AdopterDashboard />
+          </ProtectedRoute>
+        }
+      />
       
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
