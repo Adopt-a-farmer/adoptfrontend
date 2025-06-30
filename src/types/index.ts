@@ -10,6 +10,15 @@ export type Profile = {
   updated_at: string;
 }
 
+export type FarmerCategory = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon_name: string | null;
+  color: string;
+  created_at: string;
+}
+
 export type Farmer = {
   id: number;
   name: string;
@@ -23,6 +32,38 @@ export type Farmer = {
   featured: boolean;
   image_url: string | null;
   user_id: string | null;
+  category_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FarmerWithAdoptionInfo = {
+  id: number;
+  name: string;
+  location: string;
+  description: string | null;
+  crops: string[];
+  farming_experience_years: number | null;
+  fundinggoal: number;
+  fundingraised: number;
+  supporters: number;
+  featured: boolean;
+  image_url: string | null;
+  category_name: string | null;
+  category_color: string | null;
+  category_icon: string | null;
+  total_adopters: number;
+  avg_monthly_contribution: number;
+}
+
+export type FarmerAdoption = {
+  id: string;
+  farmer_id: number;
+  adopter_id: string;
+  adoption_date: string;
+  monthly_contribution: number;
+  total_contributed: number;
+  status: string;
   created_at: string;
   updated_at: string;
 }

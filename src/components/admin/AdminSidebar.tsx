@@ -2,114 +2,57 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  BarChart3, 
+  LayoutDashboard, 
   Users, 
-  Leaf, 
-  CreditCard, 
-  PackageOpen, 
-  Settings, 
-  LayoutDashboard,
-  FileText
+  DollarSign, 
+  Package, 
+  BarChart, 
+  Settings,
+  UserCheck,
+  Heart
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useIsMobile } from '@/hooks/use-mobile';
-
-const sidebarItems = [
-  {
-    title: 'Dashboard',
-    icon: <LayoutDashboard className="h-5 w-5" />,
-    href: '/admin/dashboard',
-  },
-  {
-    title: 'Farmers',
-    icon: <Leaf className="h-5 w-5" />,
-    href: '/admin/farmers',
-  },
-  {
-    title: 'Adopters',
-    icon: <Users className="h-5 w-5" />,
-    href: '/admin/adopters',
-  },
-  {
-    title: 'Payments',
-    icon: <CreditCard className="h-5 w-5" />,
-    href: '/admin/payments',
-  },
-  {
-    title: 'Suppliers',
-    icon: <PackageOpen className="h-5 w-5" />,
-    href: '/admin/suppliers',
-  },
-  {
-    title: 'Reports',
-    icon: <FileText className="h-5 w-5" />,
-    href: '/admin/reports',
-  },
-  {
-    title: 'Analytics',
-    icon: <BarChart3 className="h-5 w-5" />,
-    href: '/admin/analytics',
-  },
-  {
-    title: 'Settings',
-    icon: <Settings className="h-5 w-5" />,
-    href: '/admin/settings',
-  },
-];
 
 const AdminSidebar = () => {
   const location = useLocation();
-  const isMobile = useIsMobile();
   
+  const navigation = [
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Farmers', href: '/admin/farmers', icon: Users },
+    { name: 'Adopters', href: '/admin/adopters', icon: UserCheck },
+    { name: 'Adoptions', href: '/admin/adoptions', icon: Heart },
+    { name: 'Payments', href: '/admin/payments', icon: DollarSign },
+    { name: 'Suppliers', href: '/admin/suppliers', icon: Package },
+    { name: 'Reports', href: '/admin/reports', icon: BarChart },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <div className={`flex flex-col bg-gray-800 text-white transition-all duration-300 ${isMobile ? 'w-16' : 'w-64'}`}>
-      <div className="flex h-16 items-center justify-center border-b border-gray-700">
-        {!isMobile ? (
-          <h1 className="text-xl font-bold">Admin Dashboard</h1>
-        ) : (
-          <h1 className="text-xl font-bold">AD</h1>
-        )}
+    <div className="flex flex-col w-64 bg-white border-r border-gray-200">
+      <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-farmer-primary">Admin Panel</h1>
       </div>
       
-      <nav className="flex-1 p-4">
-        <ul className="space-y-1.5">
-          <TooltipProvider delayDuration={0}>
-            {sidebarItems.map((item) => (
-              <li key={item.href}>
-                {isMobile ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link
-                        to={item.href}
-                        className={cn(
-                          "flex items-center justify-center rounded-lg p-2.5 text-sm font-medium transition-all hover:bg-gray-700",
-                          location.pathname === item.href ? "bg-gray-700" : "text-gray-300"
-                        )}
-                      >
-                        {item.icon}
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>{item.title}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Link
-                    to={item.href}
-                    className={cn(
-                      "flex items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all hover:bg-gray-700",
-                      location.pathname === item.href ? "bg-gray-700" : "text-gray-300"
-                    )}
-                  >
-                    {item.icon}
-                    <span className="ml-3">{item.title}</span>
-                  </Link>
-                )}
-              </li>
-            ))}
-          </TooltipProvider>
-        </ul>
+      <nav className="flex-1 px-4 py-6 space-y-2">
+        {navigation.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive(item.href)
+                  ? 'bg-farmer-primary text-white'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Icon className="mr-3 h-5 w-5" />
+              {item.name}
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );

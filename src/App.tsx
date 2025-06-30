@@ -20,6 +20,7 @@ import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import FarmersManagement from "./pages/admin/FarmersManagement";
 import AdoptersManagement from "./pages/admin/AdoptersManagement";
+import AdoptionsManagement from "./pages/admin/AdoptionsManagement";
 
 // Adopter pages
 import AdopterDashboard from "./pages/adopter/AdopterDashboard";
@@ -66,6 +67,7 @@ const AppContent = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="farmers" element={<FarmersManagement />} />
         <Route path="adopters" element={<AdoptersManagement />} />
+        <Route path="adoptions" element={<AdoptionsManagement />} />
         <Route path="payments" element={<div>Payments Management</div>} />
         <Route path="suppliers" element={<div>Suppliers Management</div>} />
         <Route path="reports" element={<div>Reports</div>} />

@@ -1,96 +1,76 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Users, Wallet } from 'lucide-react';
+import { MapPin, Users, Wallet, Loader2 } from 'lucide-react';
+import { useFarmerAdoptions } from '@/hooks/useFarmerAdoptions';
+import { useFarmerCategories } from '@/hooks/useFarmerCategories';
+import { FarmerWithAdoptionInfo } from '@/types';
 
 const DiscoverFarmers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const [practiceFilter, setPracticeFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  
+  const { 
+    farmersWithAdoptionInfo, 
+    myAdoptions, 
+    isLoadingFarmers, 
+    adoptFarmer 
+  } = useFarmerAdoptions();
+  
+  const { categories, isLoading: isLoadingCategories } = useFarmerCategories();
 
-  // Mock data - in real app this would come from API
-  const availableFarmers = [
-    {
-      id: 4,
-      name: "Grace Muthoni",
-      location: "Kiambu, Kenya",
-      crops: ["Coffee", "Bananas"],
-      practice: "Organic",
-      category: "Horticulture",
-      description: "Specializing in high-quality coffee and sustainable banana farming using organic methods.",
-      amountNeeded: 1000,
-      amountRaised: 400,
-      supporters: 8,
-      image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-    },
-    {
-      id: 5,
-      name: "Samuel Kiprop",
-      location: "Eldoret, Kenya",
-      crops: ["Dairy Cows", "Maize"],
-      practice: "Regenerative",
-      category: "Livestock",
-      description: "Mixed farming approach focusing on dairy production and maize cultivation with regenerative practices.",
-      amountNeeded: 1500,
-      amountRaised: 600,
-      supporters: 12,
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-    },
-    {
-      id: 6,
-      name: "Agnes Nyong'o",
-      location: "Machakos, Kenya",
-      crops: ["Chicken", "Vegetables"],
-      practice: "Organic",
-      category: "Livestock",
-      description: "Free-range poultry farming combined with organic vegetable production for local markets.",
-      amountNeeded: 800,
-      amountRaised: 200,
-      supporters: 5,
-      image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-    },
-    {
-      id: 7,
-      name: "David Otieno",
-      location: "Homa Bay, Kenya",
-      crops: ["Tilapia", "Catfish"],
-      practice: "Sustainable",
-      category: "Aquaculture",
-      description: "Sustainable fish farming focusing on tilapia and catfish production for regional distribution.",
-      amountNeeded: 1200,
-      amountRaised: 950,
-      supporters: 18,
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-    },
-    {
-      id: 8,
-      name: "Ruth Wambui",
-      location: "Nyeri, Kenya",
-      crops: ["Tea", "Potatoes"],
-      practice: "Organic",
-      category: "Horticulture",
-      description: "Small-scale tea farming and potato cultivation using traditional organic farming methods.",
-      amountNeeded: 900,
-      amountRaised: 300,
-      supporters: 7,
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-    }
-  ];
-
-  const filteredFarmers = availableFarmers.filter(farmer => {
-    return (
-      farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (locationFilter === '' || farmer.location.includes(locationFilter)) &&
-      (practiceFilter === '' || farmer.practice === practiceFilter) &&
-      (categoryFilter === '' || farmer.category === categoryFilter)
+  // Get unique locations from farmers
+  const uniqueLocations = useMemo(() => {
+    const locations = farmersWithAdoptionInfo.map(farmer => 
+      farmer.location.split(',')[0].trim()
     );
-  });
+    return [...new Set(locations)].sort();
+  }, [farmersWithAdoptionInfo]);
+
+  // Filter farmers based on search criteria
+  const filteredFarmers = useMemo(() => {
+    return farmersWithAdoptionInfo.filter(farmer => {
+      const matchesSearch = searchTerm === '' || 
+        farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        farmer.location.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesLocation = locationFilter === '' || 
+        farmer.location.toLowerCase().includes(locationFilter.toLowerCase());
+      
+      const matchesCategory = categoryFilter === '' || 
+        farmer.category_name === categoryFilter;
+      
+      return matchesSearch && matchesLocation && matchesCategory;
+    });
+  }, [farmersWithAdoptionInfo, searchTerm, locationFilter, categoryFilter]);
+
+  // Check if farmer is already adopted by current user
+  const isAdopted = (farmerId: number) => {
+    return myAdoptions.some(adoption => 
+      adoption.farmer_id === farmerId && adoption.status === 'active'
+    );
+  };
+
+  const handleAdoptFarmer = async (farmerId: number) => {
+    await adoptFarmer(farmerId);
+  };
+
+  if (isLoadingFarmers) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-farmer-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading farmers...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -106,10 +86,10 @@ const DiscoverFarmers = () => {
           <CardTitle>Filter Farmers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Input
-                placeholder="Search by name..."
+                placeholder="Search by name or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -117,41 +97,30 @@ const DiscoverFarmers = () => {
             <div>
               <Select value={locationFilter} onValueChange={setLocationFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Location" />
+                  <SelectValue placeholder="Filter by location" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Locations</SelectItem>
-                  <SelectItem value="Kiambu">Kiambu</SelectItem>
-                  <SelectItem value="Eldoret">Eldoret</SelectItem>
-                  <SelectItem value="Machakos">Machakos</SelectItem>
-                  <SelectItem value="Nyeri">Nyeri</SelectItem>
-                  <SelectItem value="Homa Bay">Homa Bay</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Select value={practiceFilter} onValueChange={setPracticeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Practice" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Practices</SelectItem>
-                  <SelectItem value="Organic">Organic</SelectItem>
-                  <SelectItem value="Regenerative">Regenerative</SelectItem>
-                  <SelectItem value="Sustainable">Sustainable</SelectItem>
+                  {uniqueLocations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Categories</SelectItem>
-                  <SelectItem value="Horticulture">Horticulture</SelectItem>
-                  <SelectItem value="Livestock">Livestock</SelectItem>
-                  <SelectItem value="Aquaculture">Aquaculture</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -169,86 +138,137 @@ const DiscoverFarmers = () => {
       {/* Farmers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFarmers.map((farmer) => (
-          <Card key={farmer.id} className="hover:shadow-lg transition-shadow">
-            <div className="relative h-48">
-              <img 
-                src={farmer.image} 
-                alt={farmer.name}
-                className="w-full h-full object-cover rounded-t-lg"
-              />
-              <div className="absolute top-4 right-4">
-                <Badge className="bg-farmer-primary">{farmer.practice}</Badge>
-              </div>
-            </div>
-            
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{farmer.name}</CardTitle>
-                <Badge variant="outline" className="bg-farmer-secondary/10 text-farmer-primary border-farmer-secondary">
-                  {farmer.category}
-                </Badge>
-              </div>
-              <div className="flex items-center text-sm text-gray-500">
-                <MapPin className="h-4 w-4 mr-1" />
-                {farmer.location}
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              {/* Description */}
-              <p className="text-sm text-gray-600 line-clamp-3">{farmer.description}</p>
-
-              {/* Crops */}
-              <div>
-                <div className="flex flex-wrap gap-1">
-                  {farmer.crops.map((crop, index) => (
-                    <Badge key={index} variant="outline" className="text-xs bg-gray-50">
-                      {crop}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Funding Progress */}
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium">Funding Progress</span>
-                  <span className="text-farmer-primary font-medium">
-                    ${farmer.amountRaised} / ${farmer.amountNeeded}
-                  </span>
-                </div>
-                <Progress value={(farmer.amountRaised / farmer.amountNeeded) * 100} className="h-2" />
-                <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                  <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
-                    {farmer.supporters} supporters
-                  </div>
-                  <span>{Math.round((farmer.amountRaised / farmer.amountNeeded) * 100)}% funded</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-2 pt-2">
-                <Button size="sm" className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90">
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Adopt Farmer
-                </Button>
-                <Button size="sm" variant="outline" className="border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
-                  View Profile
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <FarmerCard 
+            key={farmer.id} 
+            farmer={farmer} 
+            isAdopted={isAdopted(farmer.id)}
+            onAdopt={() => handleAdoptFarmer(farmer.id)}
+          />
         ))}
       </div>
 
-      {filteredFarmers.length === 0 && (
+      {filteredFarmers.length === 0 && !isLoadingFarmers && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No farmers found matching your criteria.</p>
           <p className="text-gray-400 mt-2">Try adjusting your filters to see more results.</p>
         </div>
       )}
     </div>
+  );
+};
+
+// Separate FarmerCard component for better organization
+const FarmerCard = ({ 
+  farmer, 
+  isAdopted, 
+  onAdopt 
+}: { 
+  farmer: FarmerWithAdoptionInfo; 
+  isAdopted: boolean;
+  onAdopt: () => void;
+}) => {
+  const fundingProgress = (farmer.fundingraised / farmer.fundinggoal) * 100;
+  const defaultImage = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
+
+  return (
+    <Card className="hover:shadow-lg transition-shadow">
+      <div className="relative h-48">
+        <img 
+          src={farmer.image_url || defaultImage} 
+          alt={farmer.name}
+          className="w-full h-full object-cover rounded-t-lg"
+        />
+        <div className="absolute top-4 right-4 flex gap-2">
+          {farmer.category_name && (
+            <Badge 
+              className="text-white"
+              style={{ backgroundColor: farmer.category_color || '#10b981' }}
+            >
+              {farmer.category_name}
+            </Badge>
+          )}
+          {farmer.featured && (
+            <Badge className="bg-yellow-500 text-white">Featured</Badge>
+          )}
+        </div>
+      </div>
+      
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">{farmer.name}</CardTitle>
+          {isAdopted && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              Adopted
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center text-sm text-gray-500">
+          <MapPin className="h-4 w-4 mr-1" />
+          {farmer.location}
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Description */}
+        {farmer.description && (
+          <p className="text-sm text-gray-600 line-clamp-3">{farmer.description}</p>
+        )}
+
+        {/* Crops */}
+        <div>
+          <div className="flex flex-wrap gap-1">
+            {farmer.crops.slice(0, 3).map((crop, index) => (
+              <Badge key={index} variant="outline" className="text-xs bg-gray-50">
+                {crop}
+              </Badge>
+            ))}
+            {farmer.crops.length > 3 && (
+              <Badge variant="outline" className="text-xs bg-gray-50">
+                +{farmer.crops.length - 3} more
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Funding Progress */}
+        <div>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="font-medium">Funding Progress</span>
+            <span className="text-farmer-primary font-medium">
+              ${farmer.fundingraised} / ${farmer.fundinggoal}
+            </span>
+          </div>
+          <Progress value={fundingProgress} className="h-2" />
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+            <div className="flex items-center">
+              <Users className="h-3 w-3 mr-1" />
+              {farmer.total_adopters} adopters
+            </div>
+            <span>{Math.round(fundingProgress)}% funded</span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex space-x-2 pt-2">
+          <Button 
+            size="sm" 
+            className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90"
+            onClick={onAdopt}
+            disabled={isAdopted}
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            {isAdopted ? 'Already Adopted' : 'Adopt Farmer'}
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white"
+          >
+            View Profile
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

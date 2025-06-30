@@ -9,8 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      farmer_adoptions: {
+        Row: {
+          adopter_id: string
+          adoption_date: string
+          created_at: string
+          farmer_id: number
+          id: string
+          monthly_contribution: number
+          status: string
+          total_contributed: number
+          updated_at: string
+        }
+        Insert: {
+          adopter_id: string
+          adoption_date?: string
+          created_at?: string
+          farmer_id: number
+          id?: string
+          monthly_contribution?: number
+          status?: string
+          total_contributed?: number
+          updated_at?: string
+        }
+        Update: {
+          adopter_id?: string
+          adoption_date?: string
+          created_at?: string
+          farmer_id?: number
+          id?: string
+          monthly_contribution?: number
+          status?: string
+          total_contributed?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_adoptions_adopter_id_fkey"
+            columns: ["adopter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmer_adoptions_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      farmer_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon_name: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       farmers: {
         Row: {
+          category_id: string | null
           created_at: string
           crops: string[]
           description: string | null
@@ -27,6 +106,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           crops: string[]
           description?: string | null
@@ -43,6 +123,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           crops?: string[]
           description?: string | null
@@ -58,7 +139,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "farmers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -235,6 +324,27 @@ export type Database = {
       get_auth_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_farmers_with_adoption_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: number
+          name: string
+          location: string
+          description: string
+          crops: string[]
+          farming_experience_years: number
+          fundinggoal: number
+          fundingraised: number
+          supporters: number
+          featured: boolean
+          image_url: string
+          category_name: string
+          category_color: string
+          category_icon: string
+          total_adopters: number
+          avg_monthly_contribution: number
+        }[]
       }
       is_admin: {
         Args: { user_id: string }
