@@ -13,8 +13,8 @@ import { FarmerWithAdoptionInfo } from '@/types';
 
 const DiscoverFarmers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   
   const { 
     farmersWithAdoptionInfo, 
@@ -25,8 +25,12 @@ const DiscoverFarmers = () => {
   
   const { categories, isLoading: isLoadingCategories } = useFarmerCategories();
 
+  console.log('DiscoverFarmers - farmersWithAdoptionInfo:', farmersWithAdoptionInfo);
+  console.log('DiscoverFarmers - categories:', categories);
+
   // Get unique locations from farmers
   const uniqueLocations = useMemo(() => {
+    if (!farmersWithAdoptionInfo || farmersWithAdoptionInfo.length === 0) return [];
     const locations = farmersWithAdoptionInfo.map(farmer => 
       farmer.location.split(',')[0].trim()
     );
@@ -35,15 +39,17 @@ const DiscoverFarmers = () => {
 
   // Filter farmers based on search criteria
   const filteredFarmers = useMemo(() => {
+    if (!farmersWithAdoptionInfo) return [];
+    
     return farmersWithAdoptionInfo.filter(farmer => {
       const matchesSearch = searchTerm === '' || 
         farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         farmer.location.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesLocation = locationFilter === '' || 
+      const matchesLocation = locationFilter === 'all' || 
         farmer.location.toLowerCase().includes(locationFilter.toLowerCase());
       
-      const matchesCategory = categoryFilter === '' || 
+      const matchesCategory = categoryFilter === 'all' || 
         farmer.category_name === categoryFilter;
       
       return matchesSearch && matchesLocation && matchesCategory;
@@ -52,6 +58,7 @@ const DiscoverFarmers = () => {
 
   // Check if farmer is already adopted by current user
   const isAdopted = (farmerId: number) => {
+    if (!myAdoptions) return false;
     return myAdoptions.some(adoption => 
       adoption.farmer_id === farmerId && adoption.status === 'active'
     );
@@ -100,7 +107,7 @@ const DiscoverFarmers = () => {
                   <SelectValue placeholder="Filter by location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Locations</SelectItem>
+                  <SelectItem value="all">All Locations</SelectItem>
                   {uniqueLocations.map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
@@ -115,7 +122,7 @@ const DiscoverFarmers = () => {
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}

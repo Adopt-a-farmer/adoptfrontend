@@ -13,10 +13,15 @@ export const useFarmerAdoptions = () => {
 
   const fetchFarmersWithAdoptionInfo = async (): Promise<FarmerWithAdoptionInfo[]> => {
     try {
+      console.log('Fetching farmers with adoption info...');
       const { data, error } = await supabase.rpc('get_farmers_with_adoption_info');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching farmers with adoption info:', error);
+        throw error;
+      }
       
+      console.log('Farmers with adoption info fetched:', data);
       return data || [];
     } catch (error: any) {
       console.error('Error fetching farmers with adoption info:', error);
@@ -38,13 +43,18 @@ export const useFarmerAdoptions = () => {
     if (!user) return [];
     
     try {
+      console.log('Fetching my adoptions for user:', user.id);
       const { data, error } = await supabase
         .from('farmer_adoptions')
         .select('*')
         .eq('adopter_id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching my adoptions:', error);
+        throw error;
+      }
       
+      console.log('My adoptions fetched:', data);
       return data || [];
     } catch (error: any) {
       console.error('Error fetching my adoptions:', error);
@@ -69,6 +79,7 @@ export const useFarmerAdoptions = () => {
     }
 
     try {
+      console.log('Adopting farmer:', farmerId, 'with contribution:', monthlyContribution);
       const { error } = await supabase
         .from('farmer_adoptions')
         .insert({
@@ -77,7 +88,10 @@ export const useFarmerAdoptions = () => {
           monthly_contribution: monthlyContribution,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error adopting farmer:', error);
+        throw error;
+      }
 
       queryClient.invalidateQueries({ queryKey: ['farmers-with-adoption-info'] });
       queryClient.invalidateQueries({ queryKey: ['my-adoptions', user.id] });
@@ -101,12 +115,16 @@ export const useFarmerAdoptions = () => {
 
   const updateAdoption = async (adoptionId: string, monthlyContribution: number) => {
     try {
+      console.log('Updating adoption:', adoptionId, 'with new contribution:', monthlyContribution);
       const { error } = await supabase
         .from('farmer_adoptions')
         .update({ monthly_contribution: monthlyContribution })
         .eq('id', adoptionId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating adoption:', error);
+        throw error;
+      }
 
       queryClient.invalidateQueries({ queryKey: ['farmers-with-adoption-info'] });
       queryClient.invalidateQueries({ queryKey: ['my-adoptions', user?.id] });
@@ -130,6 +148,7 @@ export const useFarmerAdoptions = () => {
 
   // Set up real-time subscriptions
   useEffect(() => {
+    console.log('Setting up real-time subscriptions...');
     const farmersChannel = supabase
       .channel('farmers-changes')
       .on(
@@ -139,7 +158,8 @@ export const useFarmerAdoptions = () => {
           schema: 'public',
           table: 'farmers'
         },
-        () => {
+        (payload) => {
+          console.log('Farmers table changed:', payload);
           queryClient.invalidateQueries({ queryKey: ['farmers-with-adoption-info'] });
         }
       )
@@ -150,7 +170,8 @@ export const useFarmerAdoptions = () => {
           schema: 'public',
           table: 'farmer_adoptions'
         },
-        () => {
+        (payload) => {
+          console.log('Farmer adoptions table changed:', payload);
           queryClient.invalidateQueries({ queryKey: ['farmers-with-adoption-info'] });
           queryClient.invalidateQueries({ queryKey: ['my-adoptions', user?.id] });
         }
@@ -158,6 +179,7 @@ export const useFarmerAdoptions = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up real-time subscriptions...');
       supabase.removeChannel(farmersChannel);
     };
   }, [queryClient, user?.id]);
