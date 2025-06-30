@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,8 +28,9 @@ const Login = () => {
   const { signIn, user, loading } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
-  const redirectTo = queryParams.get('redirect') || '/';
+  const redirectTo = queryParams.get('redirect');
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,43 +39,39 @@ const Login = () => {
       password: '',
     },
   });
+
+  // If already logged in, redirect appropriately
+  useEffect(() => {
+    if (user && !loading) {
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        // Default redirect logic
+        navigate('/adopter');
+      }
+    }
+  }, [user, loading, navigate, redirectTo]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setErrorMessage(null);
     try {
       await signIn(values.email, values.password);
-      // Redirect is handled in AuthContext
+      // Redirect is now handled in AuthContext signIn method
     } catch (error: any) {
       setErrorMessage(error.message || 'An error occurred during login');
     }
   };
 
-  // If already logged in, don't show the login form
+  // Don't show login form if already logged in
   if (user && !loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Already Logged In</CardTitle>
-            <CardDescription>
-              You are already logged in.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Link to="/">
-              <Button>Go to Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null; // Component will redirect via useEffect
   }
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+          <CardTitle className="text-2xl font-bold text-farmer-primary">Sign In</CardTitle>
           <CardDescription>
             Enter your credentials to access your account
           </CardDescription>
@@ -116,7 +113,7 @@ const Login = () => {
               />
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-farmer-primary hover:bg-farmer-primary/90" 
                 disabled={form.formState.isSubmitting || loading}
               >
                 {form.formState.isSubmitting || loading ? (

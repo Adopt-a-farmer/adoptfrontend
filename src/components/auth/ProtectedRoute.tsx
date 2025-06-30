@@ -4,8 +4,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -34,8 +32,11 @@ const ProtectedRoute = ({
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-farmer-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -45,7 +46,7 @@ const ProtectedRoute = ({
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} />;
   }
 
-  // Remove admin and farmer role checks - allow all authenticated users
+  // Allow all authenticated users for testing purposes
   return <>{children}</>;
 };
 

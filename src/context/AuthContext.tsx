@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -60,9 +61,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Remove automatic redirect after authentication
-  // We'll handle redirects explicitly in signIn method
-
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -102,7 +100,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      // The user profile will be fetched via onAuthStateChange
       if (data.user) {
         const profile = await fetchProfile(data.user.id);
         
@@ -111,8 +108,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           description: "Welcome back!",
         });
 
-        // Always redirect to admin dashboard after login
-        navigate('/admin/dashboard');
+        // Check current path to determine redirect destination
+        const currentPath = window.location.pathname;
+        
+        if (currentPath.startsWith('/admin')) {
+          // If trying to access admin, redirect to admin dashboard
+          navigate('/admin/dashboard');
+        } else if (currentPath.startsWith('/adopter')) {
+          // If trying to access adopter, redirect to adopter dashboard
+          navigate('/adopter');
+        } else {
+          // Default redirect based on URL or role
+          const queryParams = new URLSearchParams(window.location.search);
+          const redirectTo = queryParams.get('redirect');
+          
+          if (redirectTo) {
+            navigate(redirectTo);
+          } else {
+            // Default to adopter dashboard for regular users
+            navigate('/adopter');
+          }
+        }
       }
       setLoading(false);
     } catch (error: any) {
@@ -185,7 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return await fetchProfile(user.id);
   };
 
-  const isAdmin = true; // Set everyone as admin for development
+  const isAdmin = true; // Set everyone as admin for testing
 
   return (
     <AuthContext.Provider

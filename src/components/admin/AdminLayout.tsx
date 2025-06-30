@@ -12,14 +12,18 @@ const AdminLayout = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-farmer-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
 
-  // If no user is logged in, redirect to login page
+  // If no user is logged in, redirect to login with admin redirect
   if (!user) {
+    navigate('/auth/login?redirect=/admin/dashboard');
     return null;
   }
 
