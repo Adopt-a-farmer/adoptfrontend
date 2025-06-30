@@ -29,7 +29,7 @@ interface AdopterLayoutProps {
 const AdopterLayout = ({ children }: AdopterLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/adopter', icon: Users },
@@ -148,7 +148,7 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                  <DropdownMenuItem onClick={signOut} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
