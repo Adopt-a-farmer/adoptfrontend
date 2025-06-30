@@ -103,7 +103,7 @@ export const useFarmerAdoptions = () => {
     try {
       const { error } = await supabase
         .from('farmer_adoptions')
-        .update({ monthly_contribution })
+        .update({ monthly_contribution: monthlyContribution })
         .eq('id', adoptionId);
 
       if (error) throw error;
