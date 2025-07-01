@@ -42,9 +42,9 @@ const FarmerCard = ({ farmer, showFeaturedBadge = false, size = 'regular' }: Far
         </div>
         {showFeaturedBadge && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {farmer.crops.slice(0, 2).map((crop, index) => (
+            {farmer.crops.map((crop, index) => (
               <Badge key={index} variant="outline" className="bg-farmer-secondary/10 text-farmer-primary border-farmer-secondary text-xs">
-                <Leaf className="h-2 w-2 mr-1" /> {crop.length > 8 ? crop.substring(0, 8) + '...' : crop}
+                <Leaf className="h-2 w-2 mr-1" /> {crop}
               </Badge>
             ))}
           </div>

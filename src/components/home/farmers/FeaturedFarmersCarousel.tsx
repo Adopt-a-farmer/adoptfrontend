@@ -11,10 +11,10 @@ interface FeaturedFarmersCarouselProps {
 }
 
 const FeaturedFarmersCarousel = ({ farmers }: FeaturedFarmersCarouselProps) => {
-  // Group farmers into pairs for 2-column display
-  const farmerPairs = [];
-  for (let i = 0; i < farmers.length; i += 2) {
-    farmerPairs.push(farmers.slice(i, i + 2));
+  // Group farmers into chunks of 10 for 2 rows of 5 each
+  const farmerGroups = [];
+  for (let i = 0; i < farmers.length; i += 10) {
+    farmerGroups.push(farmers.slice(i, i + 10));
   }
 
   return (
@@ -24,14 +24,30 @@ const FeaturedFarmersCarousel = ({ farmers }: FeaturedFarmersCarouselProps) => {
         <div className="max-w-6xl mx-auto px-12">
           <Carousel className="w-full">
             <CarouselContent>
-              {farmerPairs.map((pair, index) => (
+              {farmerGroups.map((group, index) => (
                 <CarouselItem key={index}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-                    {pair.map((farmer) => (
-                      <div key={farmer.id} className="max-w-md mx-auto">
-                        <FarmerCard farmer={farmer} showFeaturedBadge size="regular" />
+                  <div className="p-4">
+                    {/* Split into 2 rows of 5 farmers each */}
+                    <div className="grid grid-rows-2 gap-6">
+                      {/* First row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {group.slice(0, 5).map((farmer) => (
+                          <div key={farmer.id} className="max-w-sm mx-auto">
+                            <FarmerCard farmer={farmer} showFeaturedBadge size="regular" />
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                      {/* Second row */}
+                      {group.length > 5 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                          {group.slice(5, 10).map((farmer) => (
+                            <div key={farmer.id} className="max-w-sm mx-auto">
+                              <FarmerCard farmer={farmer} showFeaturedBadge size="regular" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CarouselItem>
               ))}
