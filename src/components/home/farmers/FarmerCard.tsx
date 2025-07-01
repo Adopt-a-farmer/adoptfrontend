@@ -20,7 +20,7 @@ const FarmerCard = ({ farmer, showFeaturedBadge = false, size = 'regular' }: Far
   const headerPadding = size === 'small' ? 'p-3 pb-2' : 'p-3 pb-2';
   
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
       <div className={`relative ${imageHeight}`}>
         <img 
           src={farmer.image_url || 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'} 
@@ -34,14 +34,14 @@ const FarmerCard = ({ farmer, showFeaturedBadge = false, size = 'regular' }: Far
         )}
       </div>
       
-      <CardHeader className={headerPadding}>
+      <CardHeader className={`${headerPadding} flex-shrink-0`}>
         <CardTitle className="text-sm font-medium leading-tight">{farmer.name}</CardTitle>
         <div className="flex items-center text-gray-500 text-xs mt-1">
           <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
           <span className="truncate">{farmer.location.split(',')[0]}</span>
         </div>
         {showFeaturedBadge && (
-          <div className="flex flex-wrap gap-1 mt-2">
+          <div className="flex flex-wrap gap-1 mt-2 min-h-[2.5rem]">
             {farmer.crops.map((crop, index) => (
               <Badge key={index} variant="outline" className="bg-farmer-secondary/10 text-farmer-primary border-farmer-secondary text-xs">
                 <Leaf className="h-2 w-2 mr-1" /> {crop}
@@ -51,7 +51,7 @@ const FarmerCard = ({ farmer, showFeaturedBadge = false, size = 'regular' }: Far
         )}
       </CardHeader>
       
-      <CardContent className={`${cardPadding} pt-0`}>
+      <CardContent className={`${cardPadding} pt-0 flex-grow flex flex-col justify-between`}>
         <div className="mb-3">
           <div className="flex justify-between text-xs mb-1">
             <span>Progress</span>

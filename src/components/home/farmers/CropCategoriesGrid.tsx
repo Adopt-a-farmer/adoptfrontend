@@ -26,8 +26,8 @@ const getCropIcon = (crop: string) => {
 const CropCategoriesGrid = ({ farmersByCrop, onCropSelect }: CropCategoriesGridProps) => {
   const cropEntries = Object.entries(farmersByCrop);
   
-  // Split crops into chunks for grid display (7-8 columns)
-  const chunkSize = 7;
+  // Split crops into chunks for responsive grid display
+  const chunkSize = 8; // Adjust for mobile vs desktop
   const cropChunks = [];
   for (let i = 0; i < cropEntries.length; i += chunkSize) {
     cropChunks.push(cropEntries.slice(i, i + chunkSize));
@@ -36,21 +36,21 @@ const CropCategoriesGrid = ({ farmersByCrop, onCropSelect }: CropCategoriesGridP
   return (
     <div className="mb-12">
       <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Browse by Crop Category</h3>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4">
         {cropChunks.map((chunk, chunkIndex) => (
           <div key={chunkIndex} className="mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
               {chunk.map(([crop, cropFarmers]) => {
                 const CropIcon = getCropIcon(crop);
                 return (
                   <Button
                     key={crop}
                     variant="outline"
-                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-farmer-primary/10 hover:border-farmer-primary transition-all"
+                    className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-farmer-primary/10 hover:border-farmer-primary transition-all aspect-square"
                     onClick={() => onCropSelect(crop)}
                   >
-                    <CropIcon className="h-6 w-6 text-farmer-primary" />
-                    <span className="text-sm font-medium text-center leading-tight">{crop}</span>
+                    <CropIcon className="h-5 w-5 text-farmer-primary flex-shrink-0" />
+                    <span className="text-xs font-medium text-center leading-tight line-clamp-2">{crop}</span>
                     <Badge variant="secondary" className="text-xs">
                       {cropFarmers.length}
                     </Badge>
