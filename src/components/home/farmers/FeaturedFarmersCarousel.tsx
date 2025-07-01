@@ -10,13 +10,13 @@ interface FeaturedFarmersCarouselProps {
 }
 
 const FeaturedFarmersCarousel = ({ farmers }: FeaturedFarmersCarouselProps) => {
-  // Limit to 20 farmers maximum
-  const limitedFarmers = farmers.slice(0, 20);
+  // Limit to 10 farmers maximum (5 columns x 2 rows)
+  const limitedFarmers = farmers.slice(0, 10);
   
-  // Group farmers into pairs for 2 columns display (5 rows max)
-  const farmerPairs = [];
-  for (let i = 0; i < limitedFarmers.length; i += 2) {
-    farmerPairs.push(limitedFarmers.slice(i, i + 2));
+  // Group farmers into rows of 5 for 5 columns display
+  const farmerRows = [];
+  for (let i = 0; i < limitedFarmers.length; i += 5) {
+    farmerRows.push(limitedFarmers.slice(i, i + 5));
   }
 
   // Don't render if no farmers
@@ -28,11 +28,11 @@ const FeaturedFarmersCarousel = ({ farmers }: FeaturedFarmersCarouselProps) => {
     <>
       <div className="mb-8">
         <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">All Featured Farmers</h3>
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="space-y-4">
-            {farmerPairs.map((pair, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pair.map((farmer) => (
+            {farmerRows.map((row, index) => (
+              <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                {row.map((farmer) => (
                   <div key={farmer.id} className="w-full">
                     <FarmerCard farmer={farmer} showFeaturedBadge size="regular" />
                   </div>
