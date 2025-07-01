@@ -1,18 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFarmers } from '@/hooks/useFarmers';
 import FarmerLoadingState from './farmers/FarmerLoadingState';
 import FarmerEmptyState from './farmers/FarmerEmptyState';
-import CropAccordionSection from './farmers/CropAccordionSection';
-import FeaturedFarmersGrid from './farmers/FeaturedFarmersGrid';
+import CropCategoriesGrid from './farmers/CropCategoriesGrid';
+import FeaturedFarmersCarousel from './farmers/FeaturedFarmersCarousel';
+import FarmerCard from './farmers/FarmerCard';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 const FeaturedFarmers = () => {
   const { farmers, isLoading } = useFarmers();
+  const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
   
   // Filter only featured farmers
   const featuredFarmers = farmers.filter(farmer => farmer.featured);
   
-  // Group farmers by crop type for accordion
+  // Group farmers by crop type for categories
   const farmersByCrop = React.useMemo(() => {
     const cropGroups: { [key: string]: typeof featuredFarmers } = {};
     
@@ -30,6 +34,14 @@ const FeaturedFarmers = () => {
     
     return cropGroups;
   }, [featuredFarmers]);
+
+  const handleCropSelect = (crop: string) => {
+    setSelectedCrop(crop);
+  };
+
+  const handleBackToAll = () => {
+    setSelectedCrop(null);
+  };
 
   if (isLoading) {
     return <FarmerLoadingState />;
@@ -49,11 +61,39 @@ const FeaturedFarmers = () => {
           </p>
         </div>
 
-        {/* Crop Categories Accordion */}
-        <CropAccordionSection farmersByCrop={farmersByCrop} />
+        {selectedCrop ? (
+          // Show farmers for selected crop
+          <div>
+            <div className="mb-6 flex items-center justify-center gap-4">
+              <Button
+                variant="outline"
+                onClick={handleBackToAll}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to All Categories
+              </Button>
+              <h3 className="text-xl font-semibold text-gray-900">{selectedCrop} Farmers</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 max-w-6xl mx-auto">
+              {farmersByCrop[selectedCrop]?.map((farmer) => (
+                <FarmerCard key={farmer.id} farmer={farmer} size="small" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          // Show crop categories and featured farmers carousel
+          <>
+            {/* Crop Categories Grid */}
+            <CropCategoriesGrid 
+              farmersByCrop={farmersByCrop} 
+              onCropSelect={handleCropSelect}
+            />
 
-        {/* Featured Farmers Compact Grid */}
-        <FeaturedFarmersGrid farmers={featuredFarmers} />
+            {/* Featured Farmers Carousel */}
+            <FeaturedFarmersCarousel farmers={featuredFarmers} />
+          </>
+        )}
       </div>
     </section>
   );
