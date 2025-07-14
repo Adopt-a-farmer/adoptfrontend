@@ -70,7 +70,7 @@ const DiscoverFarmers = () => {
     );
   };
 
-  const handleAdoptFarmer = async (farmerId: number, contributionAmount = 1000) => {
+  const handleAdoptFarmer = async (farmerId: number, contributionAmount = 1000, currency = 'KES') => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -87,7 +87,8 @@ const DiscoverFarmers = () => {
         body: {
           amount: contributionAmount,
           farmerId: farmerId,
-          email: user.email
+          email: user.email,
+          currency: currency
         }
       });
 
@@ -193,7 +194,7 @@ const DiscoverFarmers = () => {
             key={farmer.id} 
             farmer={farmer} 
             isAdopted={isAdopted(farmer.id)}
-            onAdopt={(amount) => handleAdoptFarmer(farmer.id, amount)}
+            onAdopt={(amount, currency) => handleAdoptFarmer(farmer.id, amount, currency)}
             loading={loading}
           />
         ))}
@@ -218,18 +219,27 @@ const FarmerCard = ({
 }: { 
   farmer: FarmerWithAdoptionInfo; 
   isAdopted: boolean;
-  onAdopt: (contributionAmount?: number) => void;
+  onAdopt: (contributionAmount?: number, currency?: string) => void;
   loading?: boolean;
 }) => {
   const [adoptionAmount, setAdoptionAmount] = useState(1000);
+  const [selectedCurrency, setSelectedCurrency] = useState('KES');
   const [showAdoptModal, setShowAdoptModal] = useState(false);
   
   const fundingProgress = (farmer.fundingraised / farmer.fundinggoal) * 100;
   const defaultImage = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
 
   const handleAdoptClick = () => {
-    onAdopt(adoptionAmount);
+    onAdopt(adoptionAmount, selectedCurrency);
     setShowAdoptModal(false);
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    const locale = currency === 'KES' ? 'en-KE' : 'en-US';
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
   };
 
   return (
@@ -297,7 +307,7 @@ const FarmerCard = ({
           <div className="flex justify-between text-sm mb-2">
             <span className="font-medium">Funding Progress</span>
             <span className="text-farmer-primary font-medium">
-              ${farmer.fundingraised} / ${farmer.fundinggoal}
+              {formatCurrency(farmer.fundingraised, 'KES')} / {formatCurrency(farmer.fundinggoal, 'KES')}
             </span>
           </div>
           <Progress value={fundingProgress} className="h-2" />
@@ -355,21 +365,35 @@ const FarmerCard = ({
                     </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="contribution">Monthly Contribution (NGN)</Label>
-                    <Input
-                      id="contribution"
-                      type="number"
-                      value={adoptionAmount}
-                      onChange={(e) => setAdoptionAmount(parseInt(e.target.value) || 1000)}
-                      min="500"
-                      step="100"
-                      className="mt-1"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Recommended: NGN 1,000/month. Your contribution helps with farming inputs, tools, and training.
-                    </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contribution">Monthly Contribution</Label>
+                      <Input
+                        id="contribution"
+                        type="number"
+                        value={adoptionAmount}
+                        onChange={(e) => setAdoptionAmount(parseInt(e.target.value) || 1000)}
+                        min={selectedCurrency === 'USD' ? 10 : 500}
+                        step={selectedCurrency === 'USD' ? 5 : 100}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="currency">Currency</Label>
+                      <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="KES">KES (Kenyan Shilling)</SelectItem>
+                          <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Recommended: {selectedCurrency === 'USD' ? 'USD 15' : 'KES 1,000'}/month. Your contribution helps with farming inputs, tools, and training.
+                  </p>
 
                   <div className="bg-farmer-secondary/10 p-4 rounded-lg">
                     <h4 className="font-medium text-farmer-primary mb-2">Your Impact</h4>
@@ -390,7 +414,7 @@ const FarmerCard = ({
                       className="bg-farmer-primary hover:bg-farmer-primary/90"
                       disabled={loading}
                     >
-                      {loading ? "Processing..." : `Pay NGN ${adoptionAmount} with Paystack`}
+                      {loading ? "Processing..." : `Pay ${formatCurrency(adoptionAmount, selectedCurrency)} with Paystack`}
                     </Button>
                   </div>
                 </div>

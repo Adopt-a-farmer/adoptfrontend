@@ -44,7 +44,10 @@ serve(async (req) => {
       // Update payment status
       await supabaseService
         .from("payments")
-        .update({ status: "completed" })
+        .update({ 
+          status: "completed",
+          currency: payment.currency 
+        })
         .eq("user_id", payment.metadata.user_id)
         .eq("farmer_id", payment.metadata.farmer_id);
 

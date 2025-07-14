@@ -23,11 +23,14 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const { amount, farmerId, email } = await req.json();
+    const { amount, farmerId, email, currency = 'KES' } = await req.json();
     
     const paystackSecretKey = Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!paystackSecretKey) throw new Error("Paystack secret key not configured");
 
+    // Convert amount based on currency (Paystack expects amount in smallest unit)
+    const convertedAmount = currency === 'USD' ? amount * 100 : amount * 100; // Both KES and USD use 100 subunits
+    
     // Initialize Paystack payment
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -37,12 +40,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         email: email || user.email,
-        amount: amount * 100, // Convert to kobo
-        currency: "NGN",
+        amount: convertedAmount,
+        currency: currency,
         callback_url: `${req.headers.get("origin")}/adopter/my-farmers`,
         metadata: {
           user_id: user.id,
           farmer_id: farmerId,
+          original_currency: currency,
         },
       }),
     });
@@ -64,6 +68,7 @@ serve(async (req) => {
       user_id: user.id,
       farmer_id: farmerId,
       amount: amount,
+      currency: currency,
       payment_type: "adoption",
       status: "pending",
       payment_date: new Date().toISOString(),

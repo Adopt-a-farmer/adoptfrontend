@@ -88,8 +88,9 @@ const WalletPayments = () => {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'NGN') => {
-    return new Intl.NumberFormat('en-NG', {
+  const formatCurrency = (amount: number, currency: string = 'KES') => {
+    const locale = currency === 'KES' ? 'en-KE' : currency === 'USD' ? 'en-US' : 'en-NG';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
     }).format(amount);
@@ -121,7 +122,7 @@ const WalletPayments = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Contributed</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(stats.totalContributed)}
+                  {formatCurrency(stats.totalContributed, 'KES')}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-primary" />
@@ -135,7 +136,7 @@ const WalletPayments = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Platform Fee</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(stats.totalCommission)}
+                  {formatCurrency(stats.totalCommission, 'KES')}
                 </p>
               </div>
               <CreditCard className="h-8 w-8 text-orange-500" />
@@ -250,7 +251,7 @@ const WalletPayments = () => {
         <CardContent>
           <div className="text-center py-8">
             <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">Secure payments powered by Paystack</p>
+            <p className="text-gray-500 mb-4">Secure payments powered by Paystack (KES & USD)</p>
             <div className="flex justify-center gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <div className="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
