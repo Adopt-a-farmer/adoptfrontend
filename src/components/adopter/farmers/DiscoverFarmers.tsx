@@ -6,10 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Users, Wallet, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { MapPin, Users, Wallet, Loader2, Heart, Star } from 'lucide-react';
 import { useFarmerAdoptions } from '@/hooks/useFarmerAdoptions';
 import { useFarmerCategories } from '@/hooks/useFarmerCategories';
 import { FarmerWithAdoptionInfo } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 const DiscoverFarmers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,8 +67,21 @@ const DiscoverFarmers = () => {
     );
   };
 
-  const handleAdoptFarmer = async (farmerId: number) => {
-    await adoptFarmer(farmerId);
+  const handleAdoptFarmer = async (farmerId: number, contributionAmount?: number) => {
+    try {
+      await adoptFarmer(farmerId, contributionAmount || 50);
+      toast({
+        title: "Success!",
+        description: "Farmer adopted successfully. Welcome to your impact journey!",
+      });
+    } catch (error) {
+      console.error('Failed to adopt farmer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to adopt farmer. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoadingFarmers) {
@@ -145,11 +161,11 @@ const DiscoverFarmers = () => {
       {/* Farmers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFarmers.map((farmer) => (
-          <FarmerCard 
+            <FarmerCard 
             key={farmer.id} 
             farmer={farmer} 
             isAdopted={isAdopted(farmer.id)}
-            onAdopt={() => handleAdoptFarmer(farmer.id)}
+            onAdopt={(amount) => handleAdoptFarmer(farmer.id, amount)}
           />
         ))}
       </div>
@@ -164,7 +180,7 @@ const DiscoverFarmers = () => {
   );
 };
 
-// Separate FarmerCard component for better organization
+// Enhanced FarmerCard component with adoption modal
 const FarmerCard = ({ 
   farmer, 
   isAdopted, 
@@ -172,10 +188,18 @@ const FarmerCard = ({
 }: { 
   farmer: FarmerWithAdoptionInfo; 
   isAdopted: boolean;
-  onAdopt: () => void;
+  onAdopt: (contributionAmount?: number) => void;
 }) => {
+  const [adoptionAmount, setAdoptionAmount] = useState(50);
+  const [showAdoptModal, setShowAdoptModal] = useState(false);
+  
   const fundingProgress = (farmer.fundingraised / farmer.fundinggoal) * 100;
   const defaultImage = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
+
+  const handleAdoptClick = () => {
+    onAdopt(adoptionAmount);
+    setShowAdoptModal(false);
+  };
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -257,20 +281,94 @@ const FarmerCard = ({
 
         {/* Action Buttons */}
         <div className="flex space-x-2 pt-2">
-          <Button 
-            size="sm" 
-            className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90"
-            onClick={onAdopt}
-            disabled={isAdopted}
-          >
-            <Wallet className="mr-2 h-4 w-4" />
-            {isAdopted ? 'Already Adopted' : 'Adopt Farmer'}
-          </Button>
+          {isAdopted ? (
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="flex-1 bg-green-50 text-green-700 border-green-200"
+              disabled
+            >
+              <Heart className="mr-2 h-4 w-4" />
+              Already Adopted
+            </Button>
+          ) : (
+            <Dialog open={showAdoptModal} onOpenChange={setShowAdoptModal}>
+              <DialogTrigger asChild>
+                <Button 
+                  size="sm" 
+                  className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90"
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Adopt Farmer
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adopt {farmer.name}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center space-x-4">
+                    <img 
+                      src={farmer.image_url || defaultImage} 
+                      alt={farmer.name}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                    <div>
+                      <h3 className="font-semibold">{farmer.name}</h3>
+                      <p className="text-sm text-gray-500">{farmer.location}</p>
+                      {farmer.category_name && (
+                        <Badge className="mt-1" style={{ backgroundColor: farmer.category_color || '#10b981' }}>
+                          {farmer.category_name}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="contribution">Monthly Contribution (KES)</Label>
+                    <Input
+                      id="contribution"
+                      type="number"
+                      value={adoptionAmount}
+                      onChange={(e) => setAdoptionAmount(parseInt(e.target.value) || 50)}
+                      min="10"
+                      step="10"
+                      className="mt-1"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Recommended: KES 50/month. Your contribution helps with farming inputs, tools, and training.
+                    </p>
+                  </div>
+
+                  <div className="bg-farmer-secondary/10 p-4 rounded-lg">
+                    <h4 className="font-medium text-farmer-primary mb-2">Your Impact</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Direct support for {farmer.name}'s farming activities</li>
+                      <li>• Regular updates on farm progress and harvests</li>
+                      <li>• Option to visit the farm and meet {farmer.name}</li>
+                      <li>• Contribution to sustainable agriculture in {farmer.location}</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowAdoptModal(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAdoptClick} className="bg-farmer-primary hover:bg-farmer-primary/90">
+                      Adopt for KES {adoptionAmount}/month
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          
           <Button 
             size="sm" 
             variant="outline" 
             className="border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white"
           >
+            <Star className="mr-2 h-4 w-4" />
             View Profile
           </Button>
         </div>

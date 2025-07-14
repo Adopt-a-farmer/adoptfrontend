@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -11,6 +12,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
+import { useAdopterDashboard } from '@/hooks/useAdopterDashboard';
 import { 
   Users, 
   Calendar, 
@@ -19,7 +21,12 @@ import {
   Menu,
   X,
   Settings,
-  LogOut
+  LogOut,
+  MessageCircle,
+  Search,
+  TrendingUp,
+  Home,
+  Eye
 } from 'lucide-react';
 
 interface AdopterLayoutProps {
@@ -30,16 +37,17 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { stats } = useAdopterDashboard();
 
   const navigation = [
-    { name: 'Dashboard', href: '/adopter', icon: Users },
-    { name: 'My Farmers', href: '/adopter/my-farmers', icon: Users },
-    { name: 'Discover', href: '/adopter/discover', icon: Users },
-    { name: 'Messages', href: '/adopter/messages', icon: Users },
-    { name: 'Wallet', href: '/adopter/wallet', icon: Wallet },
-    { name: 'Knowledge Hub', href: '/adopter/knowledge', icon: Book },
-    { name: 'Farm Visits', href: '/adopter/visits', icon: Calendar },
-    { name: 'Crowdfunding', href: '/adopter/crowdfunding', icon: Users },
+    { name: 'Dashboard', href: '/adopter', icon: Home, badge: null },
+    { name: 'My Farmers', href: '/adopter/my-farmers', icon: Users, badge: stats?.adoptedFarmers || null },
+    { name: 'Discover', href: '/adopter/discover', icon: Search, badge: null },
+    { name: 'Messages', href: '/adopter/messages', icon: MessageCircle, badge: stats?.unreadMessages || null },
+    { name: 'Wallet', href: '/adopter/wallet', icon: Wallet, badge: null },
+    { name: 'Knowledge Hub', href: '/adopter/knowledge', icon: Book, badge: null },
+    { name: 'Farm Visits', href: '/adopter/visits', icon: Calendar, badge: stats?.upcomingVisits || null },
+    { name: 'Crowdfunding', href: '/adopter/crowdfunding', icon: TrendingUp, badge: null },
   ];
 
   const isActive = (path: string) => {
@@ -68,15 +76,22 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md mb-1 ${
+                  className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md mb-1 ${
                     isActive(item.href)
                       ? 'bg-farmer-primary text-white'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  <div className="flex items-center">
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </div>
+                  {item.badge && item.badge > 0 && (
+                    <Badge variant="secondary" className="bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
@@ -98,14 +113,21 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md mb-1 ${
+                  className={`group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md mb-1 ${
                     isActive(item.href)
                       ? 'bg-farmer-primary text-white'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <Icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  <div className="flex items-center">
+                    <Icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </div>
+                  {item.badge && item.badge > 0 && (
+                    <Badge variant="secondary" className="bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
