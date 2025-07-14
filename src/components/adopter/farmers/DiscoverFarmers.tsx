@@ -190,7 +190,7 @@ const FarmerCard = ({
   isAdopted: boolean;
   onAdopt: (contributionAmount?: number) => void;
 }) => {
-  const [adoptionAmount, setAdoptionAmount] = useState(50);
+  const [adoptionAmount, setAdoptionAmount] = useState(1000);
   const [showAdoptModal, setShowAdoptModal] = useState(false);
   
   const fundingProgress = (farmer.fundingraised / farmer.fundinggoal) * 100;
