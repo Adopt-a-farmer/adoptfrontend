@@ -13,17 +13,20 @@ import { useFarmerAdoptions } from '@/hooks/useFarmerAdoptions';
 import { useFarmerCategories } from '@/hooks/useFarmerCategories';
 import { FarmerWithAdoptionInfo } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const DiscoverFarmers = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
   
   const { 
     farmersWithAdoptionInfo, 
     myAdoptions, 
-    isLoadingFarmers, 
-    adoptFarmer 
+    isLoadingFarmers 
   } = useFarmerAdoptions();
   
   const { categories, isLoading: isLoadingCategories } = useFarmerCategories();
@@ -67,20 +70,45 @@ const DiscoverFarmers = () => {
     );
   };
 
-  const handleAdoptFarmer = async (farmerId: number, contributionAmount?: number) => {
-    try {
-      await adoptFarmer(farmerId, contributionAmount || 50);
+  const handleAdoptFarmer = async (farmerId: number, contributionAmount = 1000) => {
+    if (!user) {
       toast({
-        title: "Success!",
-        description: "Farmer adopted successfully. Welcome to your impact journey!",
-      });
-    } catch (error) {
-      console.error('Failed to adopt farmer:', error);
-      toast({
-        title: "Error",
-        description: "Failed to adopt farmer. Please try again.",
+        title: "Authentication Required",
+        description: "Please log in to adopt a farmer",
         variant: "destructive"
       });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Initialize Paystack payment
+      const { data, error } = await supabase.functions.invoke('create-paystack-payment', {
+        body: {
+          amount: contributionAmount,
+          farmerId: farmerId,
+          email: user.email
+        }
+      });
+
+      if (error) throw error;
+
+      // Open Paystack checkout in new tab
+      window.open(data.authorization_url, '_blank');
+      
+      toast({
+        title: "Payment Initiated",
+        description: "Complete your payment to adopt this farmer. The page will open in a new tab.",
+      });
+    } catch (error: any) {
+      console.error('Failed to initialize payment:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Failed to initialize payment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -161,11 +189,12 @@ const DiscoverFarmers = () => {
       {/* Farmers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredFarmers.map((farmer) => (
-            <FarmerCard 
+           <FarmerCard 
             key={farmer.id} 
             farmer={farmer} 
             isAdopted={isAdopted(farmer.id)}
             onAdopt={(amount) => handleAdoptFarmer(farmer.id, amount)}
+            loading={loading}
           />
         ))}
       </div>
@@ -180,15 +209,17 @@ const DiscoverFarmers = () => {
   );
 };
 
-// Enhanced FarmerCard component with adoption modal
+// Enhanced FarmerCard component with Paystack payment integration
 const FarmerCard = ({ 
   farmer, 
   isAdopted, 
-  onAdopt 
+  onAdopt,
+  loading 
 }: { 
   farmer: FarmerWithAdoptionInfo; 
   isAdopted: boolean;
   onAdopt: (contributionAmount?: number) => void;
+  loading?: boolean;
 }) => {
   const [adoptionAmount, setAdoptionAmount] = useState(1000);
   const [showAdoptModal, setShowAdoptModal] = useState(false);
@@ -325,18 +356,18 @@ const FarmerCard = ({
                   </div>
                   
                   <div>
-                    <Label htmlFor="contribution">Monthly Contribution (KES)</Label>
+                    <Label htmlFor="contribution">Monthly Contribution (NGN)</Label>
                     <Input
                       id="contribution"
                       type="number"
                       value={adoptionAmount}
-                      onChange={(e) => setAdoptionAmount(parseInt(e.target.value) || 50)}
-                      min="10"
-                      step="10"
+                      onChange={(e) => setAdoptionAmount(parseInt(e.target.value) || 1000)}
+                      min="500"
+                      step="100"
                       className="mt-1"
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      Recommended: KES 50/month. Your contribution helps with farming inputs, tools, and training.
+                      Recommended: NGN 1,000/month. Your contribution helps with farming inputs, tools, and training.
                     </p>
                   </div>
 
@@ -354,8 +385,12 @@ const FarmerCard = ({
                     <Button variant="outline" onClick={() => setShowAdoptModal(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleAdoptClick} className="bg-farmer-primary hover:bg-farmer-primary/90">
-                      Adopt for KES {adoptionAmount}/month
+                    <Button 
+                      onClick={handleAdoptClick} 
+                      className="bg-farmer-primary hover:bg-farmer-primary/90"
+                      disabled={loading}
+                    >
+                      {loading ? "Processing..." : `Pay NGN ${adoptionAmount} with Paystack`}
                     </Button>
                   </div>
                 </div>
