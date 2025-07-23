@@ -92,8 +92,53 @@ export type Database = {
         }
         Relationships: []
       }
+      farmer_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          farmer_id: number | null
+          id: string
+          invite_token: string
+          invited_at: string
+          invited_by: string | null
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          farmer_id?: number | null
+          id?: string
+          invite_token?: string
+          invited_at?: string
+          invited_by?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          farmer_id?: number | null
+          id?: string
+          invite_token?: string
+          invited_at?: string
+          invited_by?: string | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_invitations_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farmers: {
         Row: {
+          account_created_at: string | null
           category_id: string | null
           created_at: string
           crops: string[]
@@ -104,6 +149,8 @@ export type Database = {
           fundingraised: number
           id: number
           image_url: string | null
+          invite_sent_at: string | null
+          invite_token: string | null
           location: string
           name: string
           supporters: number
@@ -111,6 +158,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          account_created_at?: string | null
           category_id?: string | null
           created_at?: string
           crops: string[]
@@ -121,6 +169,8 @@ export type Database = {
           fundingraised?: number
           id?: number
           image_url?: string | null
+          invite_sent_at?: string | null
+          invite_token?: string | null
           location: string
           name: string
           supporters?: number
@@ -128,6 +178,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          account_created_at?: string | null
           category_id?: string | null
           created_at?: string
           crops?: string[]
@@ -138,6 +189,8 @@ export type Database = {
           fundingraised?: number
           id?: number
           image_url?: string | null
+          invite_sent_at?: string | null
+          invite_token?: string | null
           location?: string
           name?: string
           supporters?: number
@@ -370,6 +423,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_farmer_invitation: {
+        Args: {
+          invitation_token: string
+          user_password: string
+          user_email?: string
+        }
+        Returns: Json
+      }
       get_auth_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -397,6 +458,10 @@ export type Database = {
       }
       is_admin: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      link_farmer_to_user: {
+        Args: { invitation_token: string; user_id: string }
         Returns: boolean
       }
     }
