@@ -9,7 +9,8 @@ import NotFound from "./pages/NotFound";
 import HowItWorksPage from "./pages/HowItWorks";
 import BrowseFarmers from "./pages/BrowseFarmers";
 import FarmerDetail from "./pages/FarmerDetail";
-import FarmerDashboard from "./pages/FarmerDashboard";
+// Farmer pages
+import FarmerDashboard from "./pages/farmer/FarmerDashboard";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -81,6 +82,16 @@ const AppContent = () => {
         element={
           <ProtectedRoute>
             <AdopterDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Farmer Routes */}
+      <Route 
+        path="/farmer/*" 
+        element={
+          <ProtectedRoute>
+            <FarmerDashboard />
           </ProtectedRoute>
         }
       />
