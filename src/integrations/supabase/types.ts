@@ -431,6 +431,10 @@ export type Database = {
         }
         Returns: Json
       }
+      generate_invite_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_auth_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
