@@ -1,6 +1,7 @@
 import React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import FarmerSidebar from './FarmerSidebar';
+import ChatFloatingButton from '@/components/chat/ChatFloatingButton';
 import FarmerHeader from './FarmerHeader';
 
 interface FarmerLayoutProps {
@@ -19,6 +20,7 @@ const FarmerLayout = ({ children }: FarmerLayoutProps) => {
           </main>
         </div>
       </div>
+      <ChatFloatingButton />
     </SidebarProvider>
   );
 };

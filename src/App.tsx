@@ -15,6 +15,7 @@ import FarmerDashboard from "./pages/farmer/FarmerDashboard";
 // Auth pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import FarmerInvite from "./pages/auth/FarmerInvite";
 
 // Admin pages
 import AdminLayout from "./components/admin/AdminLayout";
@@ -47,8 +48,9 @@ const AppContent = () => {
       <Route path="/farmers/:id" element={<FarmerDetail />} />
       
       {/* Auth Routes */}
-      <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/farmer-invite/:token" element={<FarmerInvite />} />
 
       {/* Redirect /dashboard/farmers to /admin/farmers for consistency */}
       <Route 

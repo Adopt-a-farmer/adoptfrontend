@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +8,9 @@ import {
 } from '@/components/ui/dialog';
 import FarmerForm, { FarmerFormValues } from './FarmerForm';
 import { Farmer } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import InviteFarmerDialog from './InviteFarmerDialog';
 
 interface FarmerFormDialogProps {
   isOpen: boolean;
@@ -29,6 +31,10 @@ const FarmerFormDialog: React.FC<FarmerFormDialogProps> = ({
   dialogDescription,
   submitLabel,
 }) => {
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [invitationData, setInvitationData] = useState<any>(null);
+  const { toast } = useToast();
+
   // Extract and prepare form values from farmer if editing
   const getDefaultValues = (): FarmerFormValues | undefined => {
     if (!farmer) return undefined;
@@ -57,22 +63,83 @@ const FarmerFormDialog: React.FC<FarmerFormDialogProps> = ({
     };
   };
 
+  const handleSubmit = async (data: FarmerFormValues) => {
+    try {
+      // Call the original onSubmit first
+      onSubmit(data);
+
+      // If this is a new farmer (no farmer prop), check for invitation
+      if (!farmer) {
+        // Give it a moment for the database to process the farmer creation
+        setTimeout(async () => {
+          try {
+            const { data: farmersData } = await supabase
+              .from('farmers')
+              .select('id')
+              .eq('name', data.name)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            if (farmersData) {
+              const { data: invitationData } = await supabase
+                .from('farmer_invitations')
+                .select('*')
+                .eq('farmer_id', farmersData.id)
+                .single();
+
+              if (invitationData) {
+                setInvitationData({
+                  ...invitationData,
+                  farmer_name: data.name,
+                  email: invitationData.email
+                });
+                setShowInviteDialog(true);
+              }
+            }
+          } catch (error) {
+            console.log('No invitation created or error checking:', error);
+          }
+        }, 1000);
+      }
+    } catch (error: any) {
+      console.error('Error in form submission:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process farmer data",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
-        </DialogHeader>
-        <FarmerForm
-          onSubmit={onSubmit}
-          onCancel={onClose}
-          defaultValues={getDefaultValues()}
-          submitLabel={submitLabel}
-          isEditing={!!farmer}
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+            <DialogDescription>{dialogDescription}</DialogDescription>
+          </DialogHeader>
+          <FarmerForm
+            onSubmit={handleSubmit}
+            onCancel={onClose}
+            defaultValues={getDefaultValues()}
+            submitLabel={submitLabel}
+            isEditing={!!farmer}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {showInviteDialog && invitationData && (
+        <InviteFarmerDialog
+          isOpen={showInviteDialog}
+          onClose={() => setShowInviteDialog(false)}
+          inviteToken={invitationData.invite_token}
+          farmerName={invitationData.farmer_name}
+          email={invitationData.email}
         />
-      </DialogContent>
-    </Dialog>
+      )}
+    </>
   );
 };
 

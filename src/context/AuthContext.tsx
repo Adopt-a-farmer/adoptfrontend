@@ -117,16 +117,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else if (currentPath.startsWith('/adopter')) {
           // If trying to access adopter, redirect to adopter dashboard
           navigate('/adopter');
+        } else if (currentPath.startsWith('/farmer')) {
+          // If trying to access farmer, redirect to farmer dashboard
+          navigate('/farmer');
         } else {
-          // Default redirect based on URL or role
+          // Default redirect based on URL or role and profile
           const queryParams = new URLSearchParams(window.location.search);
           const redirectTo = queryParams.get('redirect');
           
           if (redirectTo) {
             navigate(redirectTo);
           } else {
-            // Default to adopter dashboard for regular users
-            navigate('/adopter');
+            // Check profile role to determine redirect
+            if (profile?.role === 'farmer') {
+              navigate('/farmer');
+            } else if (profile?.role === 'admin') {
+              navigate('/admin/dashboard');
+            } else {
+              // Default to adopter dashboard for regular users
+              navigate('/adopter');
+            }
           }
         }
       }

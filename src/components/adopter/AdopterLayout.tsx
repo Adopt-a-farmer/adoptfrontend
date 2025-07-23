@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import ChatFloatingButton from '@/components/chat/ChatFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -185,6 +186,7 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
           {children}
         </main>
       </div>
+      <ChatFloatingButton />
     </div>
   );
 };
