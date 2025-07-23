@@ -11,53 +11,51 @@ import {
   TrendingUp,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { useFarmerDashboard } from '@/hooks/useFarmerDashboard';
 
 const DashboardHome = () => {
-  const stats = [
+  const { farmerProfile, stats, recentActivity, tasks, isLoading } = useFarmerDashboard();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const statsConfig = [
     {
       title: 'Active Adopters',
-      value: '12',
+      value: stats?.activeAdopters?.toString() || '0',
       icon: Users,
-      trend: '+2 this month',
+      trend: `${stats?.activeAdopters || 0} supporters`,
       color: 'text-blue-600'
     },
     {
       title: 'Total Contributions',
-      value: 'KES 45,600',
+      value: `KES ${(stats?.totalContributions || 0).toLocaleString()}`,
       icon: DollarSign,
-      trend: '+8% from last month',
+      trend: 'All time earnings',
       color: 'text-green-600'
     },
     {
       title: 'Upcoming Visits',
-      value: '3',
+      value: stats?.upcomingVisits?.toString() || '0',
       icon: Calendar,
-      trend: 'Next: Tomorrow',
+      trend: 'Scheduled this month',
       color: 'text-purple-600'
     },
     {
       title: 'Updates Shared',
-      value: '18',
+      value: stats?.updatesShared?.toString() || '0',
       icon: FileText,
-      trend: 'Last: 2 days ago',
+      trend: 'This month',
       color: 'text-orange-600'
     }
-  ];
-
-  const tasks = [
-    { id: 1, task: 'Share harvest update with photos', priority: 'High', dueDate: 'Today' },
-    { id: 2, task: 'Respond to Sarah\'s message', priority: 'Medium', dueDate: 'Tomorrow' },
-    { id: 3, task: 'Prepare for farm visit (John & Mary)', priority: 'High', dueDate: '2 days' },
-    { id: 4, task: 'Complete soil management training', priority: 'Low', dueDate: '1 week' }
-  ];
-
-  const recentActivity = [
-    { id: 1, action: 'New adopter joined', user: 'Michael Chen', time: '2 hours ago' },
-    { id: 2, action: 'Contribution received', amount: 'KES 2,500', time: '1 day ago' },
-    { id: 3, action: 'Update approved by admin', content: 'Planting season update', time: '2 days ago' },
-    { id: 4, action: 'Visit scheduled', user: 'Emma Wilson', time: '3 days ago' }
   ];
 
   return (
@@ -65,7 +63,9 @@ const DashboardHome = () => {
       {/* Welcome Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Welcome back, John! 🌾</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            Welcome back, {farmerProfile?.name || 'Farmer'}! 🌾
+          </h2>
           <p className="text-muted-foreground">Here's what's happening on your farm today</p>
         </div>
         <Button className="flex items-center gap-2">
@@ -76,7 +76,7 @@ const DashboardHome = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {statsConfig.map((stat, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
@@ -100,7 +100,7 @@ const DashboardHome = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {tasks.map((task) => (
+            {tasks?.map((task) => (
               <div key={task.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex-1">
                   <p className="font-medium text-sm">{task.task}</p>
@@ -132,7 +132,7 @@ const DashboardHome = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivity.map((activity) => (
+            {recentActivity?.map((activity) => (
               <div key={activity.id} className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
                 <div className="flex-1">
@@ -183,21 +183,21 @@ const DashboardHome = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Monthly Goal Progress</span>
-              <span>75%</span>
+              <span>{Math.round(stats?.monthlyGoalProgress || 0)}%</span>
             </div>
-            <Progress value={75} className="h-2" />
+            <Progress value={stats?.monthlyGoalProgress || 0} className="h-2" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">95%</p>
+              <p className="text-2xl font-bold text-green-600">{stats?.adopterSatisfaction || 0}%</p>
               <p className="text-sm text-muted-foreground">Adopter Satisfaction</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">18</p>
+              <p className="text-2xl font-bold text-blue-600">{stats?.updatesShared || 0}</p>
               <p className="text-sm text-muted-foreground">Updates This Month</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">8</p>
+              <p className="text-2xl font-bold text-purple-600">{stats?.successfulVisits || 0}</p>
               <p className="text-sm text-muted-foreground">Successful Visits</p>
             </div>
           </div>
