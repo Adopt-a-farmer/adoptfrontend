@@ -27,7 +27,7 @@ const Navbar = () => {
               <img 
                 src="/lovable-uploads/a76a1500-f6bb-4afb-a610-80f8ea83f1fe.png" 
                 alt="Adopt-a-Farmer Logo" 
-                className="h-24 w-auto sm:h-28 md:h-40 object-contain"
+                className="h-30 w-auto sm:h-28 md:h-40 object-contain"
               />
             </Link>
           </div>
