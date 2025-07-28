@@ -21,7 +21,7 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow">
       <div className="container mx-auto px-4">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-24 md:h-20 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
