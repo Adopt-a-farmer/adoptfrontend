@@ -25,9 +25,10 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="/lovable-uploads/2091743c-f32e-4b35-abfd-acd4343d1cb7.png" 
+                src="/lovable-uploads/a76a1500-f6bb-4afb-a610-80f8ea83f1fe.png" 
                 alt="Adopt-a-Farmer Logo" 
-                className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain"
+                className="h-8 w-auto sm:h-10 md:h-12 object-contain"
+                style={{ aspectRatio: '4.8/1' }}
               />
             </Link>
           </div>
