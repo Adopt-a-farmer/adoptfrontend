@@ -27,8 +27,7 @@ const Navbar = () => {
               <img 
                 src="/lovable-uploads/a76a1500-f6bb-4afb-a610-80f8ea83f1fe.png" 
                 alt="Adopt-a-Farmer Logo" 
-                className="h-8 w-auto sm:h-10 md:h-12 object-contain"
-                style={{ aspectRatio: '4.8/1' }}
+                className="h-12 w-auto sm:h-16 md:h-20 object-contain"
               />
             </Link>
           </div>
