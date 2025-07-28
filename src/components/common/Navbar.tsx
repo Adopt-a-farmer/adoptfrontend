@@ -24,7 +24,12 @@ const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-farmer-primary">FarmerFund</span>
+              <img 
+                src="/lovable-uploads/2091743c-f32e-4b35-abfd-acd4343d1cb7.png" 
+                alt="Adopt-a-Farmer Logo" 
+                className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain"
+              />
+              <span className="text-lg sm:text-xl font-bold text-farmer-primary hidden sm:block">ADOPT-A-FARMER</span>
             </Link>
           </div>
           
