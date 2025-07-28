@@ -23,13 +23,12 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center">
               <img 
                 src="/lovable-uploads/2091743c-f32e-4b35-abfd-acd4343d1cb7.png" 
                 alt="Adopt-a-Farmer Logo" 
-                className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain"
+                className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain"
               />
-              <span className="text-lg sm:text-xl font-bold text-farmer-primary hidden sm:block">ADOPT-A-FARMER</span>
             </Link>
           </div>
           
