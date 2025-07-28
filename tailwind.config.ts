@@ -63,12 +63,16 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for Adopt-A-Farmer
-				farmer: {
-					primary: '#2E7D32', // Dark green
-					secondary: '#81C784', // Light green
-					accent: '#8D6E63' // Warm brown
-				}
+				// Brand colors for Adopt-A-Farmer
+				'earth-brown': {
+					DEFAULT: 'hsl(var(--earth-brown))',
+					foreground: 'hsl(var(--earth-brown-foreground))'
+				},
+				// Brand hex colors as utility classes
+				'harvest-green': '#4CAF50',
+				'earth-brown-hex': '#6E4B3A',
+				'sun-gold': '#F9A825',
+				'sky-gray': '#E0E0E0'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
