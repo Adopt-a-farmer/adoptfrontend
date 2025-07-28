@@ -1,54 +1,86 @@
-# Welcome to your Lovable project
+# Adopt-A-Farmer Platform
 
-## Project info
+A modern web platform connecting adopters with farmers to support sustainable agriculture through direct financial contributions and community engagement.
 
-**URL**: https://lovable.dev/projects/ecb557e0-98a2-4ddf-90bf-0b0dec61ba77
+## 🌱 About
 
-## How can I edit this code?
+Adopt-A-Farmer is a digital platform that enables individuals and organizations to directly support farmers by adopting them and making regular contributions. The platform facilitates transparent relationships between adopters and farmers, allowing for progress tracking, communication, and impact measurement.
 
-There are several ways of editing your application.
+## ✨ Key Features
 
-**Use Lovable**
+### For Adopters
+- **Farmer Discovery**: Browse and search farmers by location, crops, and funding needs
+- **Adoption Management**: Adopt farmers and manage monthly contributions
+- **Progress Tracking**: Monitor farmer progress with regular updates and reports
+- **Farm Visits**: Schedule and plan visits to adopted farms
+- **Messaging**: Direct communication with adopted farmers
+- **Impact Dashboard**: View contribution history and impact metrics
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ecb557e0-98a2-4ddf-90bf-0b0dec61ba77) and start prompting.
+### For Farmers
+- **Profile Management**: Create and manage detailed farm profiles
+- **Update Sharing**: Share progress updates, photos, and achievements
+- **Adopter Relations**: Communicate with adopters and build relationships
+- **Financial Tracking**: Monitor contributions and withdrawal requests
+- **Visit Scheduling**: Coordinate farm visits with adopters
 
-Changes made via Lovable will be committed automatically to this repo.
+### For Administrators
+- **User Management**: Manage farmers, adopters, and their relationships
+- **Platform Oversight**: Monitor platform activity and performance
+- **Farmer Onboarding**: Invite and onboard new farmers to the platform
 
-**Use your preferred IDE**
+## 🛠 Technology Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend**: React 18 with TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Routing**: React Router DOM
+- **Backend**: Supabase (Database, Authentication, Storage)
+- **Payments**: Paystack integration
+- **Build Tool**: Vite
+- **State Management**: React Query for server state
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🚀 Getting Started
 
-Follow these steps:
+### Prerequisites
+- Node.js 18+ and npm
+- Supabase account and project setup
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Installation
+
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment Setup
+Configure your Supabase credentials and Paystack keys in the project settings.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📱 User Roles
 
-**Use GitHub Codespaces**
+### Adopter
+- Browse and adopt farmers
+- Make financial contributions
+- Track farmer progress
+- Schedule farm visits
+- Access knowledge hub
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Farmer
+- Manage farm profile and updates
+- Communicate with adopters
+- Request withdrawals
+- Share progress reports
+- Schedule visits
+
+### Admin
+- Manage all users and farmers
+- Oversee platform operations
+- Generate reports and analytics
 
 ## What technologies are used for this project?
 
