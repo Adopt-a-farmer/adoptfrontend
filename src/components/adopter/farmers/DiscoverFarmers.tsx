@@ -13,7 +13,7 @@ import { useFarmerAdoptions } from '@/hooks/useFarmerAdoptions';
 import { useFarmerCategories } from '@/hooks/useFarmerCategories';
 import { FarmerWithAdoptionInfo } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/mock/client';
 import { useAuth } from '@/context/AuthContext';
 
 const DiscoverFarmers = () => {

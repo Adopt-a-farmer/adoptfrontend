@@ -9,7 +9,7 @@ import {
 import FarmerForm, { FarmerFormValues } from './FarmerForm';
 import { Farmer } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/mock/client';
 import InviteFarmerDialog from './InviteFarmerDialog';
 
 interface FarmerFormDialogProps {
