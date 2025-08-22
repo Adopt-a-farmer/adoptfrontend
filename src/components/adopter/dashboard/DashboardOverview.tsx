@@ -39,7 +39,7 @@ const DashboardOverview = () => {
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-farmer-primary to-farmer-secondary text-white rounded-lg p-6">
         <h1 className="text-2xl md:text-3xl font-bold mb-2">
-          Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Adopter'}!
+          Welcome back, {user?.firstName || user?.email?.split('@')[0] || 'Adopter'}!
         </h1>
         <p className="text-lg opacity-90">Track your impact and connect with your adopted farmers</p>
         {stats?.unreadMessages > 0 && (

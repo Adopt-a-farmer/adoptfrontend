@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import HowItWorksPage from "./pages/HowItWorks";
 import BrowseFarmers from "./pages/BrowseFarmers";
 import FarmerDetail from "./pages/FarmerDetail";
+import PaymentCallback from "./pages/PaymentCallback";
 // Farmer pages
 import FarmerDashboard from "./pages/farmer/FarmerDashboard";
 
@@ -16,6 +17,8 @@ import FarmerDashboard from "./pages/farmer/FarmerDashboard";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import FarmerInvite from "./pages/auth/FarmerInvite";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Admin pages
 import AdminLayout from "./components/admin/AdminLayout";
@@ -29,28 +32,25 @@ import AdopterDashboard from "./pages/adopter/AdopterDashboard";
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import { seedFarmers } from "./utils/seedFarmers";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  useEffect(() => {
-    // Seed farmers when app loads
-    seedFarmers();
-  }, []);
-
   return (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/browse-farmers" element={<BrowseFarmers />} />
       <Route path="/farmers/:id" element={<FarmerDetail />} />
+      <Route path="/payment/callback" element={<PaymentCallback />} />
       
       {/* Auth Routes */}
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
-        <Route path="/auth/farmer-invite/:token" element={<FarmerInvite />} />
+      <Route path="/auth/login" element={<Login />} />
+      <Route path="/auth/register" element={<Register />} />
+      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+      <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
+      <Route path="/auth/farmer-invite/:token" element={<FarmerInvite />} />
 
       {/* Redirect /dashboard/farmers to /admin/farmers for consistency */}
       <Route 
@@ -62,7 +62,7 @@ const AppContent = () => {
       <Route 
         path="/admin" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requireAdmin>
             <AdminLayout />
           </ProtectedRoute>
         }
@@ -82,7 +82,7 @@ const AppContent = () => {
       <Route 
         path="/adopter/*" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['adopter', 'investor', 'buyer']}>
             <AdopterDashboard />
           </ProtectedRoute>
         }
@@ -92,7 +92,7 @@ const AppContent = () => {
       <Route 
         path="/farmer/*" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requireFarmer>
             <FarmerDashboard />
           </ProtectedRoute>
         }

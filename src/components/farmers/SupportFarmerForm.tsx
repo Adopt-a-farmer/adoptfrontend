@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { apiCall } from '@/services/api';
 
 interface SupportFarmerFormProps {
   farmer: {
@@ -21,8 +23,8 @@ const formSchema = z.object({
     .refine(val => !isNaN(Number(val)), {
       message: "Amount must be a number",
     })
-    .refine(val => Number(val) > 0, {
-      message: "Amount must be greater than 0",
+    .refine(val => Number(val) >= 100, {
+      message: "Amount must be at least 100 KES",
     }),
   supportType: z.string({
     required_error: "Please select a support type",
@@ -31,6 +33,8 @@ const formSchema = z.object({
 
 const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,16 +44,58 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Here you would typically integrate with a payment processor
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to support a farmer.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
     
-    toast({
-      title: "Support initiated!",
-      description: `You're supporting ${farmer.name} with $${values.amount}. Thank you!`,
-    });
-    
-    form.reset();
+    try {
+      // Create adoption if it's monthly support
+      if (values.supportType === 'monthly') {
+        await apiCall('/api/adopters/adopt', 'POST', {
+          farmer_id: farmer.id,
+          monthly_contribution: Number(values.amount)
+        });
+
+        toast({
+          title: "Adoption successful!",
+          description: `You are now supporting ${farmer.name} with KES ${values.amount} monthly.`,
+        });
+      } else {
+        // Create payment for one-time donation or project funding
+        const paymentResponse = await apiCall('/api/payments/create-payment', 'POST', {
+          farmer_id: farmer.id,
+          amount: Number(values.amount),
+          currency: 'KES',
+          description: `${values.supportType === 'donation' ? 'Donation' : 'Project funding'} for ${farmer.name}`
+        });
+
+        // Redirect to Paystack payment page
+        if (paymentResponse.authorization_url) {
+          window.location.href = paymentResponse.authorization_url;
+        } else {
+          throw new Error('Payment initialization failed');
+        }
+      }
+      
+      form.reset();
+    } catch (error: any) {
+      console.error('Error processing support:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process support. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
   return (
@@ -69,7 +115,7 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="donation">One-time Donation</SelectItem>
-                  <SelectItem value="monthly">Monthly Support</SelectItem>
+                  <SelectItem value="monthly">Monthly Support (Adoption)</SelectItem>
                   <SelectItem value="project">Project-specific Funding</SelectItem>
                 </SelectContent>
               </Select>
@@ -83,13 +129,13 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount (USD)</FormLabel>
+              <FormLabel>Amount (KES)</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Enter amount" 
+                  placeholder="Enter amount (minimum 100 KES)" 
                   {...field} 
                   type="number" 
-                  min="1" 
+                  min="100" 
                   className="appearance-textfield" 
                 />
               </FormControl>
@@ -101,8 +147,9 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
         <Button 
           type="submit" 
           className="w-full bg-farmer-primary hover:bg-farmer-primary/90"
+          disabled={isProcessing}
         >
-          Support Now
+          {isProcessing ? 'Processing...' : 'Support Now'}
         </Button>
       </form>
     </Form>

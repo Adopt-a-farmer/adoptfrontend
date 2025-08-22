@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Farmer } from '@/types';
 import Navbar from '@/components/common/Navbar';
 import Footer from '@/components/common/Footer';
@@ -11,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Users, Calendar, Leaf } from 'lucide-react';
 import SupportFarmerForm from '@/components/farmers/SupportFarmerForm';
 import FarmerUpdates from '@/components/farmers/FarmerUpdates';
+import { apiCall } from '@/services/api';
 
 const FarmerDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,19 +22,11 @@ const FarmerDetail = () => {
       if (!id) return;
       
       try {
-        const { data, error } = await supabase
-          .from('farmers')
-          .select('*')
-          .eq('id', parseInt(id))
-          .single();
-          
-        if (error) {
-          console.error('Error fetching farmer:', error);
-        } else {
-          setFarmer(data);
-        }
+        const data = await apiCall<Farmer>(`/api/farmers/${id}`, 'GET');
+        setFarmer(data);
       } catch (error) {
         console.error('Error in fetchFarmer:', error);
+        setFarmer(null);
       } finally {
         setIsLoading(false);
       }

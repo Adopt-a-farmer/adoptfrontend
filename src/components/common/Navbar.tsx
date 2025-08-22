@@ -71,9 +71,19 @@ const Navbar = () => {
                         <Link to="/admin/dashboard">Admin Dashboard</Link>
                       </DropdownMenuItem>
                     )}
-                    {profile?.role === 'farmer' && (
+                    {user?.role === 'farmer' && (
                       <DropdownMenuItem asChild>
-                        <Link to="/dashboard/farmers">Farmer Dashboard</Link>
+                        <Link to="/farmer/dashboard">Farmer Dashboard</Link>
+                      </DropdownMenuItem>
+                    )}
+                    {user?.role === 'adopter' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/adopter/dashboard">Adopter Dashboard</Link>
+                      </DropdownMenuItem>
+                    )}
+                    {user?.role === 'expert' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/expert/dashboard">Expert Dashboard</Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
@@ -149,13 +159,31 @@ const Navbar = () => {
                     Admin Dashboard
                   </Link>
                 )}
-                {profile?.role === 'farmer' && (
+                {user?.role === 'farmer' && (
                   <Link
-                    to="/dashboard/farmers"
+                    to="/farmer/dashboard"
                     className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
                     Farmer Dashboard
+                  </Link>
+                )}
+                {user?.role === 'adopter' && (
+                  <Link
+                    to="/adopter/dashboard"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Adopter Dashboard
+                  </Link>
+                )}
+                {user?.role === 'expert' && (
+                  <Link
+                    to="/expert/dashboard"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Expert Dashboard
                   </Link>
                 )}
                 <button

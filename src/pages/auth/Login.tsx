@@ -25,7 +25,7 @@ const formSchema = z.object({
 });
 
 const Login = () => {
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, loading: isLoading, isAuthenticated } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,28 +42,55 @@ const Login = () => {
 
   // If already logged in, redirect appropriately
   useEffect(() => {
-    if (user && !loading) {
+    if (isAuthenticated && user && !isLoading) {
       if (redirectTo) {
         navigate(redirectTo);
       } else {
-        // Default redirect logic
-        navigate('/adopter');
+        // Default redirect based on role
+        if (user.role === 'farmer') {
+          navigate('/farmer');
+        } else if (user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/adopter');
+        }
       }
     }
-  }, [user, loading, navigate, redirectTo]);
+  }, [user, isLoading, isAuthenticated, navigate, redirectTo]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setErrorMessage(null);
     try {
+      console.log('Attempting login with:', values.email);
       await signIn(values.email, values.password);
-      // Redirect is now handled in AuthContext signIn method
+      
+      // Navigation will be handled here since AuthContext doesn't navigate
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        console.log('Login successful, user role:', userData.role);
+        
+        // Navigate based on user role or redirect parameter
+        if (redirectTo) {
+          navigate(redirectTo);
+        } else if (userData.role === 'farmer') {
+          navigate('/farmer/dashboard');
+        } else if (userData.role === 'adopter') {
+          navigate('/adopter/dashboard');
+        } else if (userData.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
+      }
     } catch (error: any) {
+      console.error('Login error:', error);
       setErrorMessage(error.message || 'An error occurred during login');
     }
   };
 
   // Don't show login form if already logged in
-  if (user && !loading) {
+  if (isAuthenticated && user && !isLoading) {
     return null; // Component will redirect via useEffect
   }
   
@@ -111,12 +138,22 @@ const Login = () => {
                   </FormItem>
                 )}
               />
+              
+              <div className="text-right">
+                <Link 
+                  to="/auth/forgot-password" 
+                  className="text-sm text-farmer-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              
               <Button 
                 type="submit" 
                 className="w-full bg-farmer-primary hover:bg-farmer-primary/90" 
-                disabled={form.formState.isSubmitting || loading}
+                disabled={form.formState.isSubmitting || isLoading}
               >
-                {form.formState.isSubmitting || loading ? (
+                {form.formState.isSubmitting || isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Signing in...

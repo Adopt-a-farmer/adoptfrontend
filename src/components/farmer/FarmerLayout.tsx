@@ -1,7 +1,7 @@
 import React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import FarmerSidebar from './FarmerSidebar';
-import ChatFloatingButton from '@/components/chat/ChatFloatingButton';
+// import ChatFloatingButton from '@/components/chat/ChatFloatingButton'; // Disabled due to Supabase integration issues
 import FarmerHeader from './FarmerHeader';
 
 interface FarmerLayoutProps {
@@ -20,7 +20,7 @@ const FarmerLayout = ({ children }: FarmerLayoutProps) => {
           </main>
         </div>
       </div>
-      <ChatFloatingButton />
+      {/* <ChatFloatingButton /> */} {/* Disabled due to Supabase integration issues */}
     </SidebarProvider>
   );
 };

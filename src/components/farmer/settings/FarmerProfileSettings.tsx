@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,18 +26,30 @@ import {
   Smartphone
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { farmerService } from '@/services/farmer';
+import { uploadService } from '@/services/upload';
 
 const FarmerProfileSettings = () => {
+  const { user, updateProfile, changePassword } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [farmerProfile, setFarmerProfile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [profileData, setProfileData] = useState({
-    fullName: 'John Doe',
-    farmName: 'Green Valley Farm',
-    email: 'john@greenvalley.com',
-    phone: '+254712345678',
-    county: 'Kiambu',
-    subcounty: 'Thika',
-    ward: 'Hospital Ward',
-    farmType: 'Mixed Farming',
-    mpesaNumber: '+254712345678'
+    fullName: '',
+    farmName: '',
+    email: '',
+    phone: '',
+    county: '',
+    subcounty: '',
+    ward: '',
+    farmType: '',
+    mpesaNumber: '',
+    firstName: '',
+    lastName: '',
+    profilePicture: ''
   });
 
   const [notifications, setNotifications] = useState({
@@ -60,15 +72,129 @@ const FarmerProfileSettings = () => {
 
   const [security, setSecurity] = useState({
     twoFactorEnabled: false,
-    lastLogin: '2024-01-15 14:30',
-    activeDevices: 2
+    lastLogin: '',
+    activeDevices: 0
   });
 
-  const handleSaveProfile = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
+  // Fetch farmer profile data on component mount
+  useEffect(() => {
+    fetchFarmerProfile();
+  }, [user]);
+
+  const fetchFarmerProfile = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Populate from user data
+      setProfileData({
+        fullName: `${user.firstName} ${user.lastName}`,
+        farmName: '',
+        email: user.email,
+        phone: user.phoneNumber || '',
+        county: '',
+        subcounty: '',
+        ward: '',
+        farmType: '',
+        mpesaNumber: user.phoneNumber || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        profilePicture: user.profilePicture || ''
+      });
+
+      // Try to fetch detailed farmer profile
+      const response = await farmerService.getMyProfile() as any;
+      if (response.success && response.data.profile) {
+        const profile = response.data.profile;
+        setFarmerProfile(profile);
+        
+        setProfileData(prev => ({
+          ...prev,
+          farmName: profile.farmName || '',
+          county: profile.location?.county || '',
+          subcounty: profile.location?.city || '',
+          ward: profile.location?.address || '',
+          farmType: profile.farmingType?.[0] || '',
+          mpesaNumber: profile.contactInfo?.phone || prev.phone,
+          profilePicture: profile.profilePicture || prev.profilePicture
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch farmer profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // Update user basic info
+      await updateProfile({
+        firstName: profileData.fullName.split(' ')[0],
+        lastName: profileData.fullName.split(' ').slice(1).join(' '),
+        email: profileData.email,
+        phoneNumber: profileData.phone
+      });
+
+      // Update farmer profile if exists (partial update)
+      if (farmerProfile) {
+        const partial: any = {};
+        if (profileData.farmName && profileData.farmName.trim()) {
+          partial.farmName = profileData.farmName.trim();
+        }
+        if (profileData.farmType && profileData.farmType.trim()) {
+          partial.farmingType = [profileData.farmType.trim()];
+        }
+
+        // Only include non-empty contact info
+        const contactInfo: any = {};
+        if (profileData.mpesaNumber && profileData.mpesaNumber.trim()) {
+          contactInfo.phone = profileData.mpesaNumber.trim();
+        }
+        if (profileData.email && profileData.email.trim()) {
+          contactInfo.email = profileData.email.trim();
+        }
+        if (Object.keys(contactInfo).length > 0) {
+          partial.contactInfo = contactInfo;
+        }
+
+        // Build location with only provided pieces
+        const location: any = {};
+        if (profileData.county && profileData.county.trim()) {
+          location.county = profileData.county.trim();
+        }
+        if (profileData.subcounty && profileData.subcounty.trim()) {
+          location.subCounty = profileData.subcounty.trim();
+        }
+        if (profileData.ward && profileData.ward.trim()) {
+          location.village = profileData.ward.trim();
+        }
+        if (Object.keys(location).length > 0) {
+          partial.location = location;
+        }
+
+        // Only send PATCH if there is something to update
+        if (Object.keys(partial).length > 0) {
+          await farmerService.patchProfile(partial);
+        }
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveNotifications = () => {
@@ -85,6 +211,48 @@ const FarmerProfileSettings = () => {
     });
   };
 
+  const handlePhotoChange = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      
+      // Validate file
+      uploadService.validateFile(file, {
+        maxSize: 5, // 5MB
+        allowedTypes: ['image/jpeg', 'image/png', 'image/webp']
+      });
+
+      // Upload file
+      const response = await uploadService.uploadProfileImage(file);
+      
+      if (response.success) {
+        setProfileData(prev => ({
+          ...prev,
+          profilePicture: response.data.secure_url
+        }));
+        
+        toast({
+          title: "Profile Photo Updated",
+          description: "Your profile photo has been updated successfully.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload profile photo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleEnableTwoFactor = () => {
     setSecurity(prev => ({ ...prev, twoFactorEnabled: !prev.twoFactorEnabled }));
     toast({
@@ -93,6 +261,25 @@ const FarmerProfileSettings = () => {
         ? "Two-factor authentication has been disabled." 
         : "Two-factor authentication has been enabled.",
     });
+  };
+
+  const handlePasswordChange = async (currentPassword: string, newPassword: string) => {
+    try {
+      setLoading(true);
+      await changePassword(currentPassword, newPassword);
+      toast({
+        title: "Password Changed",
+        description: "Your password has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Password Change Failed",
+        description: "Failed to change password. Please check your current password.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -125,18 +312,33 @@ const FarmerProfileSettings = () => {
               {/* Profile Photo */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarImage src={profileData?.profilePicture || "/placeholder.svg"} />
+                  <AvatarFallback>
+                    {profileData?.firstName?.[0]}{profileData?.lastName?.[0]}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-2"
+                    onClick={handlePhotoChange}
+                    disabled={isUploading}
+                  >
                     <Camera className="h-4 w-4" />
-                    Change Photo
+                    {isUploading ? 'Uploading...' : 'Change Photo'}
                   </Button>
                   <p className="text-sm text-muted-foreground">
                     Upload a clear photo of yourself for your profile
                   </p>
                 </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
 
               <Separator />

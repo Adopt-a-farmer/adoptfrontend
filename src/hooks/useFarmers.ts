@@ -1,10 +1,10 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Farmer } from '@/types';
 import { FarmerFormValues } from '@/components/admin/farmers/FarmerForm';
 import { useToast } from '@/components/ui/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiCall } from '@/services/api';
 
 export const useFarmers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,18 +13,13 @@ export const useFarmers = () => {
   
   const fetchFarmers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('farmers')
-        .select('*');
-      
-      if (error) throw error;
-      
-      return data as Farmer[];
+      const data = await apiCall<Farmer[]>('GET', '/farmers');
+      return data;
     } catch (error: any) {
       console.error('Error fetching farmers:', error);
       toast({
         title: 'Error fetching farmers',
-        description: error.message,
+        description: error.message || 'Failed to fetch farmers',
         variant: 'destructive',
       });
       return [];
@@ -46,22 +41,18 @@ export const useFarmers = () => {
       // Combine county and constituency for the location field
       const formattedLocation = `${data.county}, ${data.constituency}`;
       
-      const { error } = await supabase
-        .from('farmers')
-        .insert({
-          name: data.name,
-          location: formattedLocation,
-          description: data.description || null,
-          crops: data.crops,
-          farming_experience_years: data.farming_experience_years,
-          fundinggoal: data.fundinggoal,
-          fundingraised: 0,
-          supporters: 0,
-          featured: data.featured,
-          image_url: data.image_url
-        });
-      
-      if (error) throw error;
+      await apiCall('POST', '/api/farmers', {
+        name: data.name,
+        location: formattedLocation,
+        description: data.description || null,
+        crops: data.crops,
+        farming_experience_years: data.farming_experience_years,
+        fundinggoal: data.fundinggoal,
+        fundingraised: 0,
+        supporters: 0,
+        featured: data.featured,
+        image_url: data.image_url
+      });
       
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
       
@@ -75,7 +66,7 @@ export const useFarmers = () => {
       console.error('Error adding farmer:', error);
       toast({
         title: 'Error adding farmer',
-        description: error.message,
+        description: error.message || 'Failed to add farmer',
         variant: 'destructive',
       });
       return false;
@@ -87,21 +78,16 @@ export const useFarmers = () => {
       // Combine county and constituency for the location field
       const formattedLocation = `${data.county}, ${data.constituency}`;
       
-      const { error } = await supabase
-        .from('farmers')
-        .update({
-          name: data.name,
-          location: formattedLocation,
-          description: data.description || null,
-          crops: data.crops,
-          farming_experience_years: data.farming_experience_years,
-          fundinggoal: data.fundinggoal,
-          featured: data.featured,
-          image_url: data.image_url
-        })
-        .eq('id', id);
-      
-      if (error) throw error;
+      await apiCall('PUT', `/api/farmers/${id}`, {
+        name: data.name,
+        location: formattedLocation,
+        description: data.description || null,
+        crops: data.crops,
+        farming_experience_years: data.farming_experience_years,
+        fundinggoal: data.fundinggoal,
+        featured: data.featured,
+        image_url: data.image_url
+      });
       
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
       
@@ -115,7 +101,7 @@ export const useFarmers = () => {
       console.error('Error updating farmer:', error);
       toast({
         title: 'Error updating farmer',
-        description: error.message,
+        description: error.message || 'Failed to update farmer',
         variant: 'destructive',
       });
       return false;
@@ -124,12 +110,7 @@ export const useFarmers = () => {
   
   const deleteFarmer = async (id: number) => {
     try {
-      const { error } = await supabase
-        .from('farmers')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await apiCall('DELETE', `/api/farmers/${id}`);
       
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
       
@@ -143,7 +124,7 @@ export const useFarmers = () => {
       console.error('Error deleting farmer:', error);
       toast({
         title: 'Error deleting farmer',
-        description: error.message,
+        description: error.message || 'Failed to delete farmer',
         variant: 'destructive',
       });
       return false;
@@ -152,12 +133,9 @@ export const useFarmers = () => {
   
   const toggleFeatured = async (id: number, featured: boolean) => {
     try {
-      const { error } = await supabase
-        .from('farmers')
-        .update({ featured: !featured })
-        .eq('id', id);
-      
-      if (error) throw error;
+      await apiCall('PUT', `/api/farmers/${id}/featured`, {
+        featured: !featured
+      });
       
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
       
@@ -171,7 +149,7 @@ export const useFarmers = () => {
       console.error('Error updating farmer:', error);
       toast({
         title: 'Error updating farmer',
-        description: error.message,
+        description: error.message || 'Failed to update farmer',
         variant: 'destructive',
       });
       return false;

@@ -9,26 +9,30 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
   requireFarmer?: boolean;
+  requireAdopter?: boolean;
+  allowedRoles?: string[];
 }
 
 const ProtectedRoute = ({ 
   children, 
   requireAdmin = false,
-  requireFarmer = false 
+  requireFarmer = false,
+  requireAdopter = false,
+  allowedRoles = []
 }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !isAuthenticated) {
       toast({
         title: "Authentication required",
         description: "Please log in to access this page",
         variant: "destructive",
       });
     }
-  }, [user, loading, toast]);
+  }, [user, loading, isAuthenticated, toast]);
 
   if (loading) {
     return (
@@ -41,12 +45,48 @@ const ProtectedRoute = ({
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     // Save the intended location to redirect after login
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname)}`} />;
   }
 
-  // Allow all authenticated users for testing purposes
+  // Check role-based access
+  if (requireAdmin && user.role !== 'admin') {
+    toast({
+      title: "Access denied",
+      description: "You don't have permission to access this page",
+      variant: "destructive",
+    });
+    return <Navigate to="/auth/login" />;
+  }
+
+  if (requireFarmer && user.role !== 'farmer') {
+    toast({
+      title: "Access denied",
+      description: "This page is only accessible to farmers",
+      variant: "destructive",
+    });
+    return <Navigate to="/auth/login" />;
+  }
+
+  if (requireAdopter && user.role !== 'adopter') {
+    toast({
+      title: "Access denied", 
+      description: "This page is only accessible to adopters",
+      variant: "destructive",
+    });
+    return <Navigate to="/auth/login" />;
+  }
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    toast({
+      title: "Access denied",
+      description: "You don't have permission to access this page",
+      variant: "destructive",
+    });
+    return <Navigate to="/auth/login" />;
+  }
+
   return <>{children}</>;
 };
 
