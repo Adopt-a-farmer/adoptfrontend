@@ -79,32 +79,11 @@ export const initialFarmers = [
 export const seedFarmers = async () => {
   try {
     console.log('Seeding farmers...');
-    
-    // Check if farmers already exist
-    const { data: existingFarmers, error: fetchError } = await supabase
-      .from('farmers')
-      .select('name');
-      
-    if (fetchError) {
-      console.error('Error checking existing farmers:', fetchError);
-      return;
-    }
-    
-    if (existingFarmers && existingFarmers.length > 0) {
-      console.log('Farmers already exist, skipping seed');
-      return;
-    }
-    
-    const { error } = await supabase
-      .from('farmers')
-      .insert(initialFarmers);
-      
-    if (error) {
-      console.error('Error seeding farmers:', error);
-    } else {
-      console.log('Farmers seeded successfully!');
-    }
+    // Mock implementation - in a real app, this would connect to your backend
+    console.log('Mock farmers data available:', initialFarmers.length);
+    return initialFarmers;
   } catch (error) {
     console.error('Error in seedFarmers:', error);
+    return [];
   }
 };
