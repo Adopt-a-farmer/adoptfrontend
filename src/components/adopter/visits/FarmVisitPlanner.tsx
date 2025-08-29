@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, MapPin, Clock, User, Phone, Mail, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -101,11 +101,19 @@ const FarmVisitPlanner = () => {
   // Fetch adopted farmers
   const { data: adoptedFarmers = [] } = useQuery({
     queryKey: ['adopted-farmers', user?.id],
-  queryFn: async (): Promise<AdoptedFarmer[]> => {
+    queryFn: async (): Promise<AdoptedFarmer[]> => {
       try {
-    const response = await apiCall<AdoptedFarmer[]>('GET', '/adopters/adopted-farmers');
-        return response;
+        const response = await apiCall<{ success: boolean; data: AdoptedFarmer[] }>('GET', '/adopters/adopted-farmers');
+        // Handle both direct array response and wrapped response
+        if (Array.isArray(response)) {
+          return response;
+        }
+        if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
+          return response.data;
+        }
+        return [];
       } catch (error) {
+        console.error('Error fetching adopted farmers:', error);
         return [];
       }
     },
@@ -188,6 +196,9 @@ const FarmVisitPlanner = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Schedule Farm Visit</DialogTitle>
+              <DialogDescription>
+                Plan your visit to connect with your adopted farmers and see their progress firsthand.
+              </DialogDescription>
             </DialogHeader>
             <ScheduleVisitForm 
               farmers={adoptedFarmers}
@@ -440,11 +451,11 @@ const VisitCard = ({
 
 // Schedule Visit Form Component
 const ScheduleVisitForm = ({ 
-  farmers, 
+  farmers = [], 
   onSubmit, 
   isLoading 
 }: {
-  farmers: AdoptedFarmer[];
+  farmers?: AdoptedFarmer[];
   onSubmit: (data: Omit<FarmVisit, 'id' | 'status' | 'created_at'>) => void;
   isLoading: boolean;
 }) => {
@@ -455,6 +466,9 @@ const ScheduleVisitForm = ({
     purpose: '',
     notes: ''
   });
+
+  // Ensure farmers is an array with proper type guards
+  const safeFarmers = Array.isArray(farmers) ? farmers : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,21 +492,27 @@ const ScheduleVisitForm = ({
       <div>
         <Label htmlFor="farmer">Select Farmer</Label>
         <Select value={selectedFarmer?.id.toString() || ''} onValueChange={(value) => {
-          const farmer = farmers.find(f => f.id.toString() === value);
+          const farmer = safeFarmers.find(f => f.id.toString() === value);
           setSelectedFarmer(farmer || null);
         }}>
           <SelectTrigger>
             <SelectValue placeholder="Choose a farmer to visit" />
           </SelectTrigger>
           <SelectContent>
-            {farmers.map((farmer) => (
-              <SelectItem key={farmer.id} value={farmer.id.toString()}>
-                <div className="flex items-center">
-                  <img src={farmer.image} alt={farmer.name} className="w-6 h-6 rounded-full mr-2" />
-                  <span>{farmer.name} - {farmer.location}</span>
-                </div>
+            {safeFarmers.length > 0 ? (
+              safeFarmers.map((farmer) => (
+                <SelectItem key={farmer.id} value={farmer.id.toString()}>
+                  <div className="flex items-center">
+                    <img src={farmer.image} alt={farmer.name} className="w-6 h-6 rounded-full mr-2" />
+                    <span>{farmer.name} - {farmer.location}</span>
+                  </div>
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-farmers" disabled>
+                No adopted farmers available
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -549,10 +569,10 @@ const ScheduleVisitForm = ({
         </Button>
         <Button 
           type="submit" 
-          disabled={isLoading || !selectedFarmer}
+          disabled={isLoading || !selectedFarmer || safeFarmers.length === 0}
           className="bg-farmer-primary hover:bg-farmer-primary/90"
         >
-          {isLoading ? "Scheduling..." : "Schedule Visit"}
+          {isLoading ? "Scheduling..." : safeFarmers.length === 0 ? "No Farmers Available" : "Schedule Visit"}
         </Button>
       </div>
     </form>

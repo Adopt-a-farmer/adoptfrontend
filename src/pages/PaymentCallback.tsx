@@ -25,16 +25,16 @@ const PaymentCallback = () => {
       }
 
       try {
-        const response = await apiCall<{ status: string; data: unknown }>('POST', '/payments/verify-payment', {
+        const response = await apiCall<{ success: boolean; data: { status: string; amount: number; payment: Record<string, unknown> } }>('POST', '/payments/verify', {
           reference
         });
 
-        if (response.status === 'success') {
+        if (response.success && response.data.status === 'success') {
           setStatus('success');
           setPaymentData(response.data);
           toast({
             title: "Payment Successful!",
-            description: "Thank you for your contribution.",
+            description: "Your farmer adoption has been activated.",
           });
         } else {
           setStatus('failed');
@@ -60,9 +60,9 @@ const PaymentCallback = () => {
 
   const handleContinue = () => {
     if (status === 'success') {
-      navigate('/browse-farmers');
+      navigate('/adopter/dashboard');
     } else {
-      navigate('/');
+      navigate('/adopter/farmers');
     }
   };
 

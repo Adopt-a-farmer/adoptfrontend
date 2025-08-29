@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -122,16 +122,30 @@ const DiscoverFarmers = () => {
       });
       
       if (result.success) {
-        setMyAdoptions(prev => [...prev, farmerId]);
-        
-        toast({
-          title: "Adoption Successful!",
-          description: "You have successfully adopted this farmer. You'll receive regular updates on their progress.",
-        });
+        if (result.paymentUrl) {
+          // Redirect to Paystack payment page
+          toast({
+            title: "Redirecting to Payment",
+            description: "You will be redirected to complete your payment...",
+          });
+          
+          // Wait a moment then redirect
+          setTimeout(() => {
+            window.location.href = result.paymentUrl!;
+          }, 1500);
+        } else {
+          // Direct adoption without payment (if applicable)
+          setMyAdoptions(prev => [...prev, farmerId]);
+          
+          toast({
+            title: "Adoption Successful!",
+            description: "You have successfully adopted this farmer. You'll receive regular updates on their progress.",
+          });
+        }
       } else {
         toast({
-          title: "Service Unavailable",
-          description: result.message || "Adoption service is currently unavailable. Please try again later.",
+          title: "Adoption Failed",
+          description: result.message || "Failed to create adoption. Please try again.",
           variant: "destructive"
         });
       }
@@ -451,6 +465,9 @@ const FarmerCard = ({
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Adopt {farmer.farmName}</DialogTitle>
+                  <DialogDescription>
+                    Support {farmer.user.firstName} {farmer.user.lastName} with monthly contributions to help grow their farming operations and impact their community.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <div className="flex items-center space-x-4">

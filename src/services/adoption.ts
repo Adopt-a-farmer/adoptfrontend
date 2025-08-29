@@ -48,10 +48,59 @@ export interface AdoptionStats {
   currency: string;
 }
 
+export interface PaymentResponse {
+  success: boolean;
+  data?: {
+    authorization_url: string;
+    reference: string;
+    access_code: string;
+  };
+  message?: string;
+}
+
+export interface AdoptionResponse {
+  success: boolean;
+  data?: Adoption;
+  message?: string;
+}
+
+export interface AdoptionCreateResponse {
+  success: boolean;
+  data?: Adoption;
+  message?: string;
+  paymentUrl?: string;
+}
+
 export const adoptionService = {
   // Create a new adoption
-  async createAdoption(data: { farmerId: string; monthlyContribution: number; currency: string; message?: string }): Promise<{ success: boolean; data?: Adoption; message?: string }> {
+  async createAdoption(data: { farmerId: string; monthlyContribution: number; currency: string; message?: string }): Promise<AdoptionCreateResponse> {
     try {
+      // First, initialize payment with Paystack
+      const paymentData = {
+        amount: data.monthlyContribution,
+        currency: data.currency,
+        paymentType: 'adoption',
+        paymentMethod: 'card',
+        description: `Monthly support for farmer adoption`,
+        metadata: {
+          farmerId: data.farmerId,
+          adoptionType: 'monthly_support',
+          purpose: 'farmer_adoption'
+        }
+      };
+
+      console.log('Payment data being sent:', paymentData);
+
+      const paymentResponse = await apiCall('POST', '/payments/initialize', paymentData) as PaymentResponse;
+      
+      if (!paymentResponse.success) {
+        return {
+          success: false,
+          message: paymentResponse.message || 'Failed to initialize payment. Please try again.'
+        };
+      }
+
+      // Create adoption with payment reference
       const adoptionData = {
         farmerId: data.farmerId,
         adoptionType: 'monthly_support',
@@ -64,19 +113,38 @@ export const adoptionService = {
           type: 'monthly',
           amount: data.monthlyContribution,
           currency: data.currency
-        }
+        },
+        paymentReference: paymentResponse.data?.reference
       };
-      return await apiCall('POST', '/adopters/adopt-farmer', adoptionData);
+
+      const adoptionResponse = await apiCall('POST', '/adopters/adopt-farmer', adoptionData) as AdoptionResponse;
+      
+      if (adoptionResponse.success) {
+        return {
+          success: true,
+          data: adoptionResponse.data,
+          paymentUrl: paymentResponse.data?.authorization_url,
+          message: 'Adoption created successfully. Complete payment to activate.'
+        };
+      } else {
+        return {
+          success: false,
+          message: adoptionResponse.message || 'Failed to create adoption.'
+        };
+      }
     } catch (error: unknown) {
       console.error('Failed to create adoption:', error);
-      const err = error as { response?: { status?: number } };
+      const err = error as { response?: { status?: number; data?: { message?: string } } };
       if (err?.response?.status === 404) {
         return {
           success: false,
           message: 'Adoption service is currently unavailable. Please try again later.'
         };
       }
-      throw error;
+      return {
+        success: false,
+        message: err?.response?.data?.message || 'Failed to create adoption. Please try again.'
+      };
     }
   },
 
