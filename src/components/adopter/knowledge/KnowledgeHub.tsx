@@ -45,7 +45,7 @@ const KnowledgeHub = () => {
   const [selectedArticle, setSelectedArticle] = useState<KnowledgeArticle | null>(null);
 
   // Fetch knowledge articles
-  const { data: articles = [], isLoading } = useQuery({
+  const { data: articles = [], isLoading, error: queryError } = useQuery({
     queryKey: ['knowledge-articles', filterCategory, filterType, searchTerm],
     queryFn: async (): Promise<KnowledgeArticle[]> => {
       try {
@@ -55,12 +55,15 @@ const KnowledgeHub = () => {
         if (searchTerm) params.append('search', searchTerm);
         
         const response = await apiCall<KnowledgeArticle[]>('GET', `/knowledge/articles?${params}`);
-        return response;
+        return Array.isArray(response) ? response : [];
       } catch (error) {
+        console.error('Failed to fetch articles:', error);
         // Return mock data for demonstration
         return mockArticles;
       }
     },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Like article mutation
@@ -132,7 +135,7 @@ const KnowledgeHub = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Knowledge Hub</h1>

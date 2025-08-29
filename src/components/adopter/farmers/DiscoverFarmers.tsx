@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,69 +8,102 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { MapPin, Users, Wallet, Loader2, Heart, Star } from 'lucide-react';
-import { useFarmerAdoptions } from '@/hooks/useFarmerAdoptions';
-import { useFarmerCategories } from '@/hooks/useFarmerCategories';
-import { FarmerWithAdoptionInfo } from '@/types';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/mock/client';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PageLoader } from '@/components/ui/loading';
+import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { farmerService, FarmerProfile } from '@/services/farmer';
+import { adoptionService, Adoption } from '@/services/adoption';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
+// Component starts here
 const DiscoverFarmers = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [loading, setLoading] = useState(false);
-  
+  const [farmingTypeFilter, setFarmingTypeFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [myAdoptions, setMyAdoptions] = useState<string[]>([]);
+
+  // Fetch farmers data
   const { 
-    farmersWithAdoptionInfo, 
-    myAdoptions, 
-    isLoadingFarmers 
-  } = useFarmerAdoptions();
-  
-  const { categories, isLoading: isLoadingCategories } = useFarmerCategories();
+    data: farmersResponse, 
+    isLoading: isLoadingFarmers,
+    error: farmersError 
+  } = useQuery({
+    queryKey: ['farmers', page, searchTerm, locationFilter, farmingTypeFilter],
+    queryFn: async () => {
+      const params: Record<string, string | number | boolean> = {
+        page,
+        limit: 12,
+        isActive: true
+      };
+      
+      if (searchTerm) params.search = searchTerm;
+      if (locationFilter !== 'all') params.location = locationFilter;
+      if (farmingTypeFilter !== 'all') params.farmingType = farmingTypeFilter;
+      
+      return await farmerService.getFarmers(params);
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  console.log('DiscoverFarmers - farmersWithAdoptionInfo:', farmersWithAdoptionInfo);
-  console.log('DiscoverFarmers - categories:', categories);
+  // Fetch my adoptions to check which farmers are already adopted
+  const { data: adoptionsResponse } = useQuery({
+    queryKey: ['my-adoptions'],
+    queryFn: () => adoptionService.getMyAdoptions(),
+    retry: 1,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
-  // Get unique locations from farmers
+  useEffect(() => {
+    if (adoptionsResponse?.data) {
+      // Handle the actual backend response structure
+      const responseData = adoptionsResponse.data as { farmersData?: { adoption: Adoption; farmerProfile: unknown }[] };
+      const adoptionsArray = responseData.farmersData || [];
+      
+      const adoptedFarmerIds = adoptionsArray
+        .filter(item => item.adoption && item.adoption.status === 'active')
+        .map(item => item.adoption.farmer._id);
+      setMyAdoptions(adoptedFarmerIds);
+    }
+  }, [adoptionsResponse]);
+
+  const farmers = useMemo(() => {
+    return farmersResponse?.data?.farmers || [];
+  }, [farmersResponse]);
+
+  const total = farmersResponse?.data?.total || 0;
+
+  // Get unique locations and farming types
   const uniqueLocations = useMemo(() => {
-    if (!farmersWithAdoptionInfo || farmersWithAdoptionInfo.length === 0) return [];
-    const locations = farmersWithAdoptionInfo.map(farmer => 
-      farmer.location.split(',')[0].trim()
-    );
+    const locations = farmers.map(farmer => farmer.location?.county || '').filter(Boolean);
     return [...new Set(locations)].sort();
-  }, [farmersWithAdoptionInfo]);
+  }, [farmers]);
 
-  // Filter farmers based on search criteria
+  const uniqueFarmingTypes = useMemo(() => {
+    const types = farmers.flatMap(farmer => farmer.farmingType || []);
+    return [...new Set(types)].sort();
+  }, [farmers]);
+
+  // Filter farmers for client-side filtering
   const filteredFarmers = useMemo(() => {
-    if (!farmersWithAdoptionInfo) return [];
-    
-    return farmersWithAdoptionInfo.filter(farmer => {
+    return farmers.filter(farmer => {
       const matchesSearch = searchTerm === '' || 
-        farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        farmer.location.toLowerCase().includes(searchTerm.toLowerCase());
+        farmer.farmName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${farmer.user?.firstName || ''} ${farmer.user?.lastName || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        farmer.location?.county?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        farmer.location?.subCounty?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesLocation = locationFilter === 'all' || 
-        farmer.location.toLowerCase().includes(locationFilter.toLowerCase());
-      
-      const matchesCategory = categoryFilter === 'all' || 
-        farmer.category_name === categoryFilter;
-      
-      return matchesSearch && matchesLocation && matchesCategory;
+      return matchesSearch;
     });
-  }, [farmersWithAdoptionInfo, searchTerm, locationFilter, categoryFilter]);
+  }, [farmers, searchTerm]);
 
-  // Check if farmer is already adopted by current user
-  const isAdopted = (farmerId: number) => {
-    if (!myAdoptions) return false;
-    return myAdoptions.some(adoption => 
-      adoption.farmer_id === farmerId && adoption.status === 'active'
-    );
-  };
-
-  const handleAdoptFarmer = async (farmerId: number, contributionAmount = 1000, currency = 'KES') => {
+  const handleAdoptFarmer = async (farmerId: string, contributionAmount: number, currency: string, message?: string) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -80,46 +113,61 @@ const DiscoverFarmers = () => {
       return;
     }
 
-    setLoading(true);
     try {
-      // Initialize Paystack payment
-      const { data, error } = await supabase.functions.invoke('create-paystack-payment', {
-        body: {
-          amount: contributionAmount,
-          farmerId: farmerId,
-          email: user.email,
-          currency: currency
-        }
+      const result = await adoptionService.createAdoption({
+        farmerId,
+        monthlyContribution: contributionAmount,
+        currency,
+        message
       });
-
-      if (error) throw error;
-
-      // Open Paystack checkout in new tab
-      window.open(data.authorization_url, '_blank');
+      
+      if (result.success) {
+        setMyAdoptions(prev => [...prev, farmerId]);
+        
+        toast({
+          title: "Adoption Successful!",
+          description: "You have successfully adopted this farmer. You'll receive regular updates on their progress.",
+        });
+      } else {
+        toast({
+          title: "Service Unavailable",
+          description: result.message || "Adoption service is currently unavailable. Please try again later.",
+          variant: "destructive"
+        });
+      }
+    } catch (error: unknown) {
+      console.error('Failed to adopt farmer:', error);
+      const err = error as { response?: { status?: number; data?: { message?: string } } };
+      let errorMessage = "Failed to adopt farmer. Please try again.";
+      
+      if (err?.response?.status === 404) {
+        errorMessage = "Adoption service is currently unavailable. Please contact support.";
+      } else if (err?.response?.status === 400) {
+        errorMessage = err?.response?.data?.message || "Invalid adoption request.";
+      }
       
       toast({
-        title: "Payment Initiated",
-        description: "Complete your payment to adopt this farmer. The page will open in a new tab.",
-      });
-    } catch (error: unknown) {
-      console.error('Failed to initialize payment:', error);
-      toast({
-        title: "Payment Error",
-        description: error instanceof Error ? error.message : "Failed to initialize payment. Please try again.",
+        title: "Adoption Failed",
+        description: errorMessage,
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (isLoadingFarmers) {
+  if (isLoadingFarmers && page === 1) {
+    return <PageLoader text="Loading farmers..." />;
+  }
+
+  if (farmersError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-farmer-primary mx-auto mb-4" />
-          <p className="text-gray-600">Loading farmers...</p>
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">
+          <p className="text-lg font-medium">Failed to load farmers</p>
+          <p className="text-sm">Please check your connection and try again</p>
         </div>
+        <Button onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </div>
     );
   }
@@ -138,10 +186,10 @@ const DiscoverFarmers = () => {
           <CardTitle>Filter Farmers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Input
-                placeholder="Search by name or location..."
+                placeholder="Search by name, farm, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -162,15 +210,15 @@ const DiscoverFarmers = () => {
               </Select>
             </div>
             <div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select value={farmingTypeFilter} onValueChange={setFarmingTypeFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Filter by category" />
+                  <SelectValue placeholder="Filter by farming type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
+                  <SelectItem value="all">All Farming Types</SelectItem>
+                  {uniqueFarmingTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -183,55 +231,101 @@ const DiscoverFarmers = () => {
       {/* Results Count */}
       <div>
         <p className="text-gray-600">
-          Showing {filteredFarmers.length} farmer{filteredFarmers.length !== 1 ? 's' : ''} available for adoption
+          Showing {filteredFarmers.length} of {total} farmer{total !== 1 ? 's' : ''} available for adoption
         </p>
       </div>
 
       {/* Farmers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFarmers.map((farmer) => (
-           <FarmerCard 
-            key={farmer.id} 
-            farmer={farmer} 
-            isAdopted={isAdopted(farmer.id)}
-            onAdopt={(amount, currency) => handleAdoptFarmer(farmer.id, amount, currency)}
-            loading={loading}
-          />
-        ))}
-      </div>
-
-      {filteredFarmers.length === 0 && !isLoadingFarmers && (
+      {filteredFarmers.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredFarmers.map((farmer) => (
+            <FarmerCard 
+              key={farmer._id} 
+              farmer={farmer} 
+              isAdopted={myAdoptions.includes(farmer._id)}
+              onAdopt={handleAdoptFarmer}
+            />
+          ))}
+        </div>
+      ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No farmers found matching your criteria.</p>
-          <p className="text-gray-400 mt-2">Try adjusting your filters to see more results.</p>
+          <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No farmers found</h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm || locationFilter !== 'all' || farmingTypeFilter !== 'all'
+              ? 'Try adjusting your search or filters' 
+              : 'No farmers are currently available for adoption'}
+          </p>
+          {(searchTerm || locationFilter !== 'all' || farmingTypeFilter !== 'all') && (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSearchTerm('');
+                setLocationFilter('all');
+                setFarmingTypeFilter('all');
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > 12 && (
+        <div className="flex justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || isLoadingFarmers}
+          >
+            Previous
+          </Button>
+          <span className="flex items-center px-4 py-2 text-sm text-gray-600">
+            Page {page} of {Math.ceil(total / 12)}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage(p => p + 1)}
+            disabled={page >= Math.ceil(total / 12) || isLoadingFarmers}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>
   );
 };
 
-// Enhanced FarmerCard component with Paystack payment integration
+// Enhanced FarmerCard component
 const FarmerCard = ({ 
   farmer, 
   isAdopted, 
-  onAdopt,
-  loading 
+  onAdopt
 }: { 
-  farmer: FarmerWithAdoptionInfo; 
+  farmer: FarmerProfile; 
   isAdopted: boolean;
-  onAdopt: (contributionAmount?: number, currency?: string) => void;
-  loading?: boolean;
+  onAdopt: (farmerId: string, amount: number, currency: string, message?: string) => Promise<void>;
 }) => {
   const [adoptionAmount, setAdoptionAmount] = useState(1000);
   const [selectedCurrency, setSelectedCurrency] = useState('KES');
+  const [adoptionMessage, setAdoptionMessage] = useState('');
   const [showAdoptModal, setShowAdoptModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
-  const fundingProgress = (farmer.fundingraised / farmer.fundinggoal) * 100;
+  const fundingProgress = farmer.fundingGoal > 0 ? (farmer.fundingRaised / farmer.fundingGoal) * 100 : 0;
   const defaultImage = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
 
-  const handleAdoptClick = () => {
-    onAdopt(adoptionAmount, selectedCurrency);
-    setShowAdoptModal(false);
+  const handleAdoptClick = async () => {
+    setIsProcessing(true);
+    try {
+      await onAdopt(farmer._id, adoptionAmount, selectedCurrency, adoptionMessage);
+      setShowAdoptModal(false);
+    } catch (error) {
+      // Error is handled in parent component
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -246,59 +340,70 @@ const FarmerCard = ({
     <Card className="hover:shadow-lg transition-shadow">
       <div className="relative h-48">
         <img 
-          src={farmer.image_url || defaultImage} 
-          alt={farmer.name}
+          src={farmer.media?.profileImage?.url || farmer.farmImages?.[0] || '/placeholder.svg'} 
+          alt={farmer.farmName}
           className="w-full h-full object-cover rounded-t-lg"
         />
         <div className="absolute top-4 right-4 flex gap-2">
-          {farmer.category_name && (
-            <Badge 
-              className="text-white"
-              style={{ backgroundColor: farmer.category_color || '#10b981' }}
-            >
-              {farmer.category_name}
-            </Badge>
-          )}
-          {farmer.featured && (
-            <Badge className="bg-yellow-500 text-white">Featured</Badge>
-          )}
+          <Badge 
+            className="text-white bg-green-600"
+          >
+            {Array.isArray(farmer.farmingType) ? farmer.farmingType.join(', ') : farmer.farmingType}
+          </Badge>
         </div>
       </div>
       
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{farmer.name}</CardTitle>
+          <CardTitle className="text-lg">{farmer.farmName}</CardTitle>
           {isAdopted && (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Heart className="h-3 w-3 mr-1" />
               Adopted
             </Badge>
           )}
         </div>
-        <div className="flex items-center text-sm text-gray-500">
-          <MapPin className="h-4 w-4 mr-1" />
-          {farmer.location}
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-700">
+            {farmer.user?.firstName} {farmer.user?.lastName}
+          </p>
+          <div className="flex items-center text-sm text-gray-500">
+            <MapPin className="h-4 w-4 mr-1" />
+            {farmer.location?.subCounty}, {farmer.location?.county}
+          </div>
         </div>
       </CardHeader>
       
       <CardContent className="space-y-4">
         {/* Description */}
-        {farmer.description && (
-          <p className="text-sm text-gray-600 line-clamp-3">{farmer.description}</p>
-        )}
+        <p className="text-sm text-gray-600 line-clamp-3">{farmer.description}</p>
 
         {/* Crops */}
         <div>
+          <p className="text-xs font-medium text-gray-500 mb-1">Crops:</p>
           <div className="flex flex-wrap gap-1">
-            {farmer.crops.slice(0, 3).map((crop, index) => (
+            {farmer.cropTypes.slice(0, 3).map((crop, index) => (
               <Badge key={index} variant="outline" className="text-xs bg-gray-50">
                 {crop}
               </Badge>
             ))}
-            {farmer.crops.length > 3 && (
+            {farmer.cropTypes.length > 3 && (
               <Badge variant="outline" className="text-xs bg-gray-50">
-                +{farmer.crops.length - 3} more
+                +{farmer.cropTypes.length - 3} more
               </Badge>
             )}
+          </div>
+        </div>
+
+        {/* Farm Details */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span className="text-gray-500">Farm Size:</span>
+            <p className="font-medium">{farmer.farmSize?.value} {farmer.farmSize?.unit || 'acres'}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Experience:</span>
+            <p className="font-medium">{farmer.farmingExperience} years</p>
           </div>
         </div>
 
@@ -306,15 +411,15 @@ const FarmerCard = ({
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="font-medium">Funding Progress</span>
-            <span className="text-farmer-primary font-medium">
-              {formatCurrency(farmer.fundingraised, 'KES')} / {formatCurrency(farmer.fundinggoal, 'KES')}
+            <span className="text-green-600 font-medium">
+              {formatCurrency(farmer.fundingRaised, 'KES')} / {formatCurrency(farmer.fundingGoal, 'KES')}
             </span>
           </div>
           <Progress value={fundingProgress} className="h-2" />
           <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
             <div className="flex items-center">
               <Users className="h-3 w-3 mr-1" />
-              {farmer.total_adopters} adopters
+              {farmer.adoptionStats?.totalAdopters || farmer.adoptionStats?.currentAdoptions || 0} adopters
             </div>
             <span>{Math.round(fundingProgress)}% funded</span>
           </div>
@@ -337,31 +442,27 @@ const FarmerCard = ({
               <DialogTrigger asChild>
                 <Button 
                   size="sm" 
-                  className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
                 >
                   <Wallet className="mr-2 h-4 w-4" />
                   Adopt Farmer
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Adopt {farmer.name}</DialogTitle>
+                  <DialogTitle>Adopt {farmer.farmName}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <div className="flex items-center space-x-4">
                     <img 
-                      src={farmer.image_url || defaultImage} 
-                      alt={farmer.name}
+                      src={farmer.media?.profileImage?.url || farmer.user?.avatar || '/placeholder.svg'} 
+                      alt={farmer.farmName}
                       className="w-16 h-16 rounded-full object-cover"
                     />
                     <div>
-                      <h3 className="font-semibold">{farmer.name}</h3>
-                      <p className="text-sm text-gray-500">{farmer.location}</p>
-                      {farmer.category_name && (
-                        <Badge className="mt-1" style={{ backgroundColor: farmer.category_color || '#10b981' }}>
-                          {farmer.category_name}
-                        </Badge>
-                      )}
+                      <h3 className="font-semibold">{farmer.user.firstName} {farmer.user.lastName}</h3>
+                      <p className="text-sm text-gray-500">{farmer.farmName}</p>
+                      <p className="text-xs text-gray-400">{farmer.location.subCounty}, {farmer.location.county}</p>
                     </div>
                   </div>
                   
@@ -391,17 +492,25 @@ const FarmerCard = ({
                       </Select>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Recommended: {selectedCurrency === 'USD' ? 'USD 15' : 'KES 1,000'}/month. Your contribution helps with farming inputs, tools, and training.
-                  </p>
 
-                  <div className="bg-farmer-secondary/10 p-4 rounded-lg">
-                    <h4 className="font-medium text-farmer-primary mb-2">Your Impact</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Direct support for {farmer.name}'s farming activities</li>
+                  <div>
+                    <Label htmlFor="message">Message to Farmer (Optional)</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Share why you want to support this farmer..."
+                      value={adoptionMessage}
+                      onChange={(e) => setAdoptionMessage(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-green-700 mb-2">Your Impact</h4>
+                    <ul className="text-sm text-green-600 space-y-1">
+                      <li>• Direct support for {farmer.user.firstName}'s farming activities</li>
                       <li>• Regular updates on farm progress and harvests</li>
-                      <li>• Option to visit the farm and meet {farmer.name}</li>
-                      <li>• Contribution to sustainable agriculture in {farmer.location}</li>
+                      <li>• Option to visit the farm and meet {farmer.user.firstName}</li>
+                      <li>• Contribution to sustainable agriculture in {farmer.location.county}</li>
                     </ul>
                   </div>
 
@@ -411,25 +520,23 @@ const FarmerCard = ({
                     </Button>
                     <Button 
                       onClick={handleAdoptClick} 
-                      className="bg-farmer-primary hover:bg-farmer-primary/90"
-                      disabled={loading}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={isProcessing}
                     >
-                      {loading ? "Processing..." : `Pay ${formatCurrency(adoptionAmount, selectedCurrency)} with Paystack`}
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        `Adopt for ${formatCurrency(adoptionAmount, selectedCurrency)}/month`
+                      )}
                     </Button>
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
           )}
-          
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white"
-          >
-            <Star className="mr-2 h-4 w-4" />
-            View Profile
-          </Button>
         </div>
       </CardContent>
     </Card>

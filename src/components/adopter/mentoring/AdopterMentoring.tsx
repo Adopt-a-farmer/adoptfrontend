@@ -34,13 +34,16 @@ const AdopterMentoring = () => {
     try {
       setIsLoading(true);
       const response = await adopterService.getMentoringFarmers(page, 10);
-      setMentorships(response.data);
-      setTotalPages(response.pagination.pages);
+      setMentorships(response.data || []);
+      setTotalPages(response.pagination?.pages || 1);
       setCurrentPage(page);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch mentorships:', error);
       setError('Failed to load mentoring relationships');
+      // Provide fallback empty data instead of crashing
+      setMentorships([]);
+      setTotalPages(1);
       toast({
         title: 'Error',
         description: 'Failed to load mentoring relationships',
@@ -118,7 +121,7 @@ const AdopterMentoring = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

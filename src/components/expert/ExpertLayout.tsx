@@ -32,7 +32,7 @@ const ExpertLayout = ({ children }: ExpertLayoutProps) => {
       <div className="flex-1 flex flex-col min-w-0">
         <ExpertHeader onToggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-6 bg-gray-50 min-h-screen">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

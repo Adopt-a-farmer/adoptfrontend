@@ -20,6 +20,7 @@ const expertMenuItems = [
   { title: 'My Articles', url: '/expert/articles', icon: FileText },
   { title: 'Create Article', url: '/expert/articles/create', icon: Edit3 },
   { title: 'Mentorships', url: '/expert/mentorships', icon: HandHeart },
+  { title: 'Discover Farmers', url: '/expert/farmers', icon: Users },
   { title: 'Investor Relations', url: '/expert/investors', icon: TrendingUp },
   { title: 'Messages', url: '/expert/messages', icon: MessageCircle },
   { title: 'Farm Visits', url: '/expert/visits', icon: MapPin },

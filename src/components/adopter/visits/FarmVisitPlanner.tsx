@@ -71,18 +71,32 @@ const FarmVisitPlanner = () => {
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 
   // Fetch farm visits
-  const { data: visits = [], isLoading } = useQuery({
+  const { data: visitsResponse, isLoading } = useQuery({
     queryKey: ['farm-visits', user?.id],
-  queryFn: async (): Promise<FarmVisit[]> => {
+    queryFn: async () => {
       try {
-    const response = await apiCall<FarmVisit[]>('GET', '/visits');
+        const response = await apiCall('GET', '/visits');
         return response;
-      } catch (error) {
-        return [];
+      } catch (error: unknown) {
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 404) {
+          console.warn('Visits endpoint not available yet');
+          return { data: [] };
+        }
+        return { data: [] };
       }
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: false
   });
+
+  // Extract visits from response
+  const visits = (() => {
+    const response = visitsResponse as { data?: FarmVisit[] | { visits?: FarmVisit[] } };
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.data?.visits)) return response.data.visits;
+    return [];
+  })() as FarmVisit[];
 
   // Fetch adopted farmers
   const { data: adoptedFarmers = [] } = useQuery({
@@ -157,7 +171,7 @@ const FarmVisitPlanner = () => {
   
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>

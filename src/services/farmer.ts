@@ -175,14 +175,22 @@ export interface MediaFile {
 
 export interface FarmerProfile {
   _id: string;
-  user: string;
+  user: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    avatar?: string;
+  };
   farmName: string;
-  bio: string;
+  description: string;
+  bio?: string;
   farmingType: string[];
   location: {
-    state: string;
-    city: string;
-    address: string;
+    county: string;
+    subCounty: string;
+    village?: string;
     coordinates?: {
       latitude: number;
       longitude: number;
@@ -192,20 +200,35 @@ export interface FarmerProfile {
     value: number;
     unit: string;
   };
-  establishedYear: number;
-  contactInfo: {
-    phone: string;
-    whatsapp?: string;
+  establishedYear?: number;
+  cropTypes: string[];
+  farmingExperience?: number;
+  contactInfo?: {
+    phone?: string;
     email?: string;
+    website?: string;
   };
   socialMedia?: {
     facebook?: string;
     instagram?: string;
     twitter?: string;
   };
-  farmImages: string[];
-  certifications: string[];
-  adoptionPackages: Array<{
+  media?: {
+    profileImage?: {
+      url: string;
+    };
+    farmImages?: Array<{
+      url: string;
+    }>;
+  };
+  farmImages?: string[];
+  certifications?: Array<{
+    name: string;
+    issuedBy: string;
+    issuedDate: string;
+    expiryDate: string;
+  }>;
+  adoptionPackages?: Array<{
     type: string;
     title: string;
     description: string;
@@ -215,20 +238,32 @@ export interface FarmerProfile {
     deliverables: string[];
   }>;
   verificationStatus: 'pending' | 'verified' | 'rejected';
-  verificationDocuments: string[];
+  verificationDocuments?: string[];
   bankDetails?: {
     bankName: string;
     accountNumber: string;
     accountName: string;
   };
-  statistics: {
+  adoptionStats?: {
+    totalAdopters: number;
+    currentAdoptions: number;
+    totalFunding: number;
+  };
+  fundingGoal?: number;
+  fundingRaised?: number;
+  statistics?: {
     totalAdoptions: number;
     activeAdoptions: number;
     rating: number;
     completedProjects: number;
   };
+  rating?: {
+    average: number;
+    count: number;
+  };
   createdAt: string;
   updatedAt: string;
+  isActive?: boolean;
 }
 
 export interface FarmerAnalytics {

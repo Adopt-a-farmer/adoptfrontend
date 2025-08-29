@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-// import ChatFloatingButton from '@/components/chat/ChatFloatingButton'; // Disabled due to Supabase integration issues
+import ErrorBoundary from '@/components/ui/error-boundary';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -184,8 +184,10 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
         </div>
 
         {/* Page content */}
-        <main className="p-6">
-          {children}
+        <main className="p-6 bg-gray-50 min-h-screen">
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
       {/* <ChatFloatingButton /> */} {/* Disabled due to Supabase integration issues */}

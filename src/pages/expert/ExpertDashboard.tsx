@@ -13,6 +13,7 @@ import ExpertMentorships from '@/components/expert/mentorships/ExpertMentorships
 import InvestorFarmerRelationships from '@/components/expert/investors/InvestorFarmerRelationships';
 import ExpertMessaging from '@/components/expert/messages/ExpertMessaging';
 import ExpertFarmVisits from '@/components/expert/visits/ExpertFarmVisits';
+import ExpertDiscoverFarmers from '@/components/expert/farmers/DiscoverFarmers';
 
 const ExpertDashboard = () => {
   return (
@@ -23,6 +24,7 @@ const ExpertDashboard = () => {
         <Route path="articles/create" element={<CreateArticle />} />
         <Route path="articles/edit/:id" element={<EditArticle />} />
         <Route path="mentorships" element={<ExpertMentorships />} />
+        <Route path="farmers" element={<ExpertDiscoverFarmers />} />
         <Route path="investors" element={<InvestorFarmerRelationships />} />
         <Route path="messages" element={<ExpertMessaging />} />
         <Route path="visits" element={<ExpertFarmVisits />} />

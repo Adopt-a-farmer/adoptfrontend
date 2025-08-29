@@ -45,36 +45,59 @@ const CrowdfundingHub = () => {
   const [showCreateProject, setShowCreateProject] = useState(false);
 
   // Fetch crowdfunding projects
-  const { data: projects = [], isLoading } = useQuery({
+  const { data: projectsResponse, isLoading } = useQuery({
     queryKey: ['crowdfunding-projects', filterCategory, searchTerm],
-    queryFn: async (): Promise<CrowdfundingProject[]> => {
+    queryFn: async () => {
       try {
         const params = new URLSearchParams();
         if (filterCategory !== 'all') params.append('category', filterCategory);
         if (searchTerm) params.append('search', searchTerm);
         
-        const response = await apiCall<CrowdfundingProject[]>('GET', `/crowdfunding/projects?${params}`);
+        const response = await apiCall('GET', `/crowdfunding/projects?${params}`);
         return response;
       } catch (error) {
-        return [];
+        return { data: [] };
       }
     },
   });
 
+  // Extract projects from response
+  const projects = (() => {
+    const response = projectsResponse as { data?: CrowdfundingProject[] | { projects?: CrowdfundingProject[] } };
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.data?.projects)) return response.data.projects;
+    return [];
+  })() as CrowdfundingProject[];
+
   // Fetch user's backed projects
-  const { data: backedProjects = [] } = useQuery({
+  const { data: backedProjectsResponse } = useQuery({
     queryKey: ['backed-projects', user?.id],
-    queryFn: async (): Promise<CrowdfundingProject[]> => {
-      if (!user) return [];
+    queryFn: async () => {
+      if (!user) return { data: [] };
       try {
-        const response = await apiCall<CrowdfundingProject[]>('GET', '/crowdfunding/backed-projects');
+        const response = await apiCall('GET', '/crowdfunding/backed-projects');
         return response;
-      } catch (error) {
-        return [];
+      } catch (error: unknown) {
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 404) {
+          // Endpoint doesn't exist yet, return empty data
+          console.warn('Backed projects endpoint not available yet');
+          return { data: [] };
+        }
+        return { data: [] };
       }
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: false // Don't retry 404s
   });
+
+  // Extract backed projects from response
+  const backedProjects = (() => {
+    const response = backedProjectsResponse as { data?: CrowdfundingProject[] | { projects?: CrowdfundingProject[] } };
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.data?.projects)) return response.data.projects;
+    return [];
+  })() as CrowdfundingProject[];
 
   // Support project mutation
   const supportProjectMutation = useMutation({
@@ -108,7 +131,7 @@ const CrowdfundingHub = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
