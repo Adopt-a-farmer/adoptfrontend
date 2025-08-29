@@ -46,13 +46,16 @@ const MessagingCenter = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch conversations
-  const { data: conversations = [], isLoading } = useQuery({
+  const { data: conversationsData, isLoading } = useQuery({
     queryKey: ['conversations', user?.id],
     queryFn: async (): Promise<Conversation[]> => {
       try {
-        const response = await apiCall<Conversation[]>('GET', '/messages/conversations');
-        return response;
+        const response = await apiCall<{ data: Conversation[] } | Conversation[]>('GET', '/messages/conversations');
+        // Handle both response formats: { data: [...] } or [...]
+        const conversations = Array.isArray(response) ? response : (response as { data: Conversation[] })?.data || [];
+        return Array.isArray(conversations) ? conversations : [];
       } catch (error) {
+        console.error('Failed to fetch conversations:', error);
         // Return mock data for demonstration
         return mockConversations;
       }
@@ -60,21 +63,30 @@ const MessagingCenter = () => {
     enabled: !!user
   });
 
+  // Ensure conversations is always an array
+  const conversations = Array.isArray(conversationsData) ? conversationsData : [];
+
   // Fetch messages for selected conversation
-  const { data: messages = [] } = useQuery({
+  const { data: messagesData } = useQuery({
     queryKey: ['messages', selectedConversation?.id],
     queryFn: async (): Promise<Message[]> => {
       if (!selectedConversation) return [];
       try {
-        const response = await apiCall<Message[]>('GET', `/messages/conversations/${selectedConversation.id}/messages`);
-        return response;
+        const response = await apiCall<{ data: Message[] } | Message[]>('GET', `/messages/conversations/${selectedConversation.id}/messages`);
+        // Handle both response formats: { data: [...] } or [...]
+        const messages = Array.isArray(response) ? response : (response as { data: Message[] })?.data || [];
+        return Array.isArray(messages) ? messages : [];
       } catch (error) {
+        console.error('Failed to fetch messages:', error);
         // Return mock data for demonstration
         return mockMessages.filter(m => m.conversation_id === selectedConversation.id);
       }
     },
     enabled: !!selectedConversation
   });
+
+  // Ensure messages is always an array
+  const messages = Array.isArray(messagesData) ? messagesData : [];
 
   // Send message mutation
   const sendMessageMutation = useMutation({

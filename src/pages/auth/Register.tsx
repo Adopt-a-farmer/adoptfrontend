@@ -65,8 +65,8 @@ const Register = () => {
         lastName: values.lastName 
       });
       
-      // Use AuthContext signUp method
-      await signUp({
+      // Use AuthContext signUp method which should handle navigation
+      const result = await signUp({
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
@@ -75,20 +75,25 @@ const Register = () => {
         role: values.role,
       });
       
-      console.log('Registration successful, navigating to dashboard...');
+      console.log('Registration successful:', result);
+      
+      // Show success toast
+      toast({
+        title: "Registration Successful",
+        description: "Welcome! You're being redirected to your dashboard.",
+        variant: "default",
+      });
       
       // Navigate based on user role after successful registration
-      setTimeout(() => {
-        if (values.role === 'farmer') {
-          navigate('/farmer/dashboard');
-        } else if (values.role === 'adopter') {
-          navigate('/adopter/dashboard');
-        } else if (values.role === 'expert') {
-          navigate('/expert/dashboard');
-        } else {
-          navigate('/');
-        }
-      }, 1000);
+      if (values.role === 'farmer') {
+        navigate('/farmer/dashboard', { replace: true });
+      } else if (values.role === 'adopter') {
+        navigate('/adopter/dashboard', { replace: true });
+      } else if (values.role === 'expert') {
+        navigate('/expert/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
       
     } catch (error: unknown) {
       console.error('Registration failed:', error);

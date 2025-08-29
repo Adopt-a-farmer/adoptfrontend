@@ -1,5 +1,14 @@
 import { apiCall } from './api';
-import type { FarmerParams, AdoptionParams, PasswordChangeData, WithdrawalData, SearchFilters, MediaUploadData, MediaHeaders } from '@/types/api';
+import type { 
+  FarmerParams, 
+  AdoptionParams, 
+  PasswordChangeData, 
+  WithdrawalData, 
+  SearchFilters, 
+  MediaUploadData, 
+  MediaHeaders,
+  Conversation 
+} from '@/types/api';
 
 export interface FarmUpdate {
   _id: string;
@@ -65,23 +74,6 @@ export interface FarmerAvailability {
   }>;
   maxVisitsPerDay: number;
   isActive: boolean;
-}
-
-export interface Conversation {
-  _id: string;
-  participants: Array<{
-    _id: string;
-    firstName: string;
-    lastName: string;
-    role: string;
-  }>;
-  lastMessage?: {
-    content: string;
-    createdAt: string;
-    sender: string;
-  };
-  unreadCount: number;
-  updatedAt: string;
 }
 
 export interface FarmerExpert {

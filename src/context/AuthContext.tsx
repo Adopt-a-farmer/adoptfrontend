@@ -51,7 +51,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (userData: SignUpData) => Promise<void>;
+  signUp: (userData: SignUpData) => Promise<{ token: string; refreshToken?: string; user: User } | void>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
@@ -178,7 +178,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (userData: SignUpData) => {
     try {
       setLoading(true);
+      console.log('AuthContext: Starting signup process...', userData);
+      
       const res = await authService.signup(userData);
+      console.log('AuthContext: Signup response received:', res);
+      
       const response = res as unknown as { data: { token: string; refreshToken?: string; user: User } };
       const { token, refreshToken, user: newUser } = response.data;
       
@@ -200,14 +204,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile(profileData);
       setIsAuthenticated(true);
       
+      console.log('AuthContext: User state updated successfully', newUser);
+      
       toast({
         title: "Registration successful",
         description: "Welcome to our platform!",
       });
+      
+      return response.data; // Return the data for the component to handle navigation
     } catch (error: unknown) {
+      console.error('AuthContext: Signup error:', error);
+      
+      let errorMessage = "Please try again.";
+      const apiError = error as { response?: { data?: { message?: string } }; message?: string };
+      if (apiError.response?.data?.message) {
+        errorMessage = apiError.response.data.message;
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
+      }
+      
       toast({
         title: "Registration failed",
-        description: "Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       
