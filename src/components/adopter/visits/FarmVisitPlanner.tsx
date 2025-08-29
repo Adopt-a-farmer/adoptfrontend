@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, MapPin, Clock, User, Phone, Mail, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface FarmVisit {
@@ -111,10 +111,10 @@ const FarmVisitPlanner = () => {
       queryClient.invalidateQueries({ queryKey: ['farm-visits'] });
       setShowScheduleDialog(false);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to schedule visit",
+        description: error instanceof Error ? error.message : "Failed to schedule visit",
         variant: "destructive",
       });
     }
@@ -132,10 +132,10 @@ const FarmVisitPlanner = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['farm-visits'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update visit",
+        description: error instanceof Error ? error.message : "Failed to update visit",
         variant: "destructive",
       });
     }

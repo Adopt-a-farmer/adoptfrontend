@@ -1,4 +1,5 @@
 import { apiCall } from './api';
+import type { KnowledgeParams, CalendarParams, ArticleData, CommentData, CalendarEntryData, SearchFilters } from '@/types/api';
 
 export interface KnowledgeArticle {
   _id: string;
@@ -24,6 +25,7 @@ export interface KnowledgeArticle {
     user: string;
     date: string;
   }>;
+  likesCount?: number;
   views: number;
   comments: Array<{
     user: {
@@ -115,12 +117,17 @@ export const knowledgeService = {
     difficulty?: string;
     sort?: 'latest' | 'popular' | 'views';
   }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
     return await apiCall<{
       success: boolean;
       data: {
         articles: KnowledgeArticle[];
-        pagination: any;
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          pages: number;
+        };
       };
     }>('GET', `/knowledge/articles${queryString}`);
   },
@@ -134,16 +141,7 @@ export const knowledgeService = {
   },
 
   // Create article (Expert/Admin only)
-  createArticle: async (articleData: {
-    title: string;
-    content: string;
-    excerpt: string;
-    category: string;
-    tags: string[];
-    featuredImage?: string;
-    images?: string[];
-    difficulty: string;
-  }) => {
+  createArticle: async (articleData: ArticleData) => {
     return await apiCall('POST', '/knowledge/articles', articleData);
   },
 
@@ -178,7 +176,10 @@ export const knowledgeService = {
     crop?: string;
     livestock?: string;
   }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(Object.entries(params).reduce((acc, [key, value]) => {
+      if (value !== undefined) acc[key] = String(value);
+      return acc;
+    }, {} as Record<string, string>)).toString()}` : '';
     return await apiCall<{
       success: boolean;
       data: {
@@ -189,22 +190,7 @@ export const knowledgeService = {
   },
 
   // Create calendar entry (Expert/Admin only)
-  createCalendarEntry: async (entryData: {
-    title: string;
-    description: string;
-    category: string;
-    timing: {
-      month: number;
-      week?: number;
-      season: string;
-    };
-    region: string;
-    cropType?: string[];
-    livestockType?: string[];
-    priority: string;
-    resources: string[];
-    tips: string[];
-  }) => {
+  createCalendarEntry: async (entryData: CalendarEntryData) => {
     return await apiCall('POST', '/knowledge/calendar', entryData);
   },
 
@@ -224,11 +210,11 @@ export const knowledgeService = {
   },
 
   // Search articles
-  searchArticles: async (query: string, filters?: any) => {
+  searchArticles: async (query: string, filters?: SearchFilters) => {
     const params = new URLSearchParams({ q: query });
     if (filters) {
       Object.keys(filters).forEach(key => {
-        if (filters[key]) params.append(key, filters[key]);
+        if (filters[key]) params.append(key, String(filters[key]));
       });
     }
     
@@ -265,7 +251,10 @@ export const knowledgeService = {
     category?: string;
     search?: string;
   }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(Object.entries(params).reduce((acc, [key, value]) => {
+      if (value !== undefined) acc[key] = String(value);
+      return acc;
+    }, {} as Record<string, string>)).toString()}` : '';
     return await apiCall<{
       success: boolean;
       data: {

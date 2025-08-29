@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCall } from '@/services/api';
 import { visitService } from '@/services/visit';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 // Utility functions
@@ -229,10 +229,10 @@ const FarmVisitScheduler = () => {
       queryClient.invalidateQueries({ queryKey: ['farm-visits'] });
       queryClient.invalidateQueries({ queryKey: ['visit-stats'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update visit status",
+        description: (error as Error)?.message || "Failed to update visit status",
         variant: "destructive",
       });
     }
@@ -250,10 +250,10 @@ const FarmVisitScheduler = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['visit-availability'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to add time slots",
+        description: (error as Error)?.message || "Failed to add time slots",
         variant: "destructive",
       });
     }

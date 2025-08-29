@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Wallet, CreditCard, CheckCircle, Clock, XCircle, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/mock/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Payment {
   id: string;
@@ -37,7 +37,7 @@ const WalletPayments = () => {
     if (user) {
       fetchPayments();
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPayments = async () => {
     try {
@@ -53,13 +53,14 @@ const WalletPayments = () => {
         .order('payment_date', { ascending: false });
 
       if (data) {
-        setPayments(data);
+        const typedData = data as Array<{ amount: number; commission_amount?: number; status: string }>;
+        setPayments(typedData as Payment[]);
         
         // Calculate stats
-        const totalContributed = data.reduce((sum, payment) => sum + payment.amount, 0);
-        const totalCommission = data.reduce((sum, payment) => sum + (payment.commission_amount || 0), 0);
-        const completedPayments = data.filter(p => p.status === 'completed').length;
-        const pendingPayments = data.filter(p => p.status === 'pending').length;
+        const totalContributed = typedData.reduce((sum, payment) => sum + payment.amount, 0);
+        const totalCommission = typedData.reduce((sum, payment) => sum + (payment.commission_amount || 0), 0);
+        const completedPayments = typedData.filter(p => p.status === 'completed').length;
+        const pendingPayments = typedData.filter(p => p.status === 'pending').length;
         
         setStats({
           totalContributed,

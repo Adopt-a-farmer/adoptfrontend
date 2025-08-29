@@ -16,9 +16,84 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { farmerService } from '@/services/farmer';
+
+interface DashboardResponse {
+  data: {
+    farmer: {
+      _id: string;
+      user: {
+        _id: string;
+        email: string;
+        avatar?: string;
+      };
+      farmName: string;
+      description?: string;
+      bio?: string;
+      location?: {
+        county: string;
+        subCounty: string;
+        village?: string;
+      };
+      farmSize?: {
+        value: number;
+        unit: string;
+      };
+      cropTypes: string[];
+      farmingMethods: string[];
+      farmingType?: string[];
+      certifications?: string[];
+      establishedYear?: number;
+      media?: {
+        profileImage?: {
+          url: string;
+        };
+        farmImages?: Array<{
+          url: string;
+        }>;
+      };
+      contactInfo?: {
+        phone?: string;
+        email?: string;
+        website?: string;
+      };
+      socialMedia?: {
+        facebook?: string;
+        twitter?: string;
+        instagram?: string;
+        website?: string;
+      };
+      isActive?: boolean;
+      allowVisits?: boolean;
+      operatingHours?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
+interface LocationData {
+  county?: string;
+  subCounty?: string;
+  village?: string;
+}
+
+interface UpdatePayload {
+  farmName?: string;
+  description?: string;
+  farmSize?: { value: number; unit: string };
+  establishedYear?: number;
+  farmingType?: string[];
+  location?: LocationData;
+  contactInfo?: { phone?: string; email?: string; website?: string };
+  socialMedia?: { facebook?: string; twitter?: string; instagram?: string };
+  cropTypes?: string[];
+  farmingMethods?: string[];
+  isActive?: boolean;
+  allowVisits?: boolean;
+  operatingHours?: string;
+}
 
 interface FarmProfile {
   id: string;
@@ -73,21 +148,21 @@ const FarmProfileManager = () => {
     queryKey: ['farm-profile', user?.id],
     queryFn: async (): Promise<FarmProfile> => {
       try {
-        const response = await apiCall<{data: any}>('GET', '/farmers/dashboard');
+        const response = await apiCall<DashboardResponse>('GET', '/farmers/dashboard');
         // Transform the backend response to match our interface
         if (response.data && response.data.farmer) {
           const farmer = response.data.farmer;
           return {
             id: farmer._id,
-            farmer_id: farmer.user._id,
+            farmer_id: parseInt(farmer.user._id) || 0,
             farm_name: farmer.farmName || '',
             description: farmer.description || farmer.bio || '',
             location: farmer.location ? `${farmer.location.county}, ${farmer.location.subCounty}${farmer.location.village ? ', ' + farmer.location.village : ''}` : '',
             originalLocation: farmer.location || null, // Store original backend location object
             farm_size: farmer.farmSize?.value || 0,
-            farm_size_unit: farmer.farmSize?.unit || 'acres',
+            farm_size_unit: (farmer.farmSize?.unit || 'acres') as 'acres' | 'hectares',
             crop_types: farmer.cropTypes || [],
-            farming_type: Array.isArray(farmer.farmingType) ? (farmer.farmingType[0] || 'crop') : 'crop',
+            farming_type: (Array.isArray(farmer.farmingType) ? (farmer.farmingType[0] || 'crop') : 'crop') as 'livestock' | 'crop' | 'mixed' | 'aquaculture' | 'apiary',
             farming_methods: farmer.farmingMethods || [],
             certifications: farmer.certifications || [],
             established_year: farmer.establishedYear || new Date().getFullYear(),
@@ -103,7 +178,7 @@ const FarmProfileManager = () => {
             specialties: [],
             achievements: [],
             sustainability_practices: [],
-            updated_at: farmer.updatedAt
+            updated_at: (farmer.updatedAt as string) || new Date().toISOString()
           };
         }
         throw new Error('No farmer profile found');
@@ -120,15 +195,16 @@ const FarmProfileManager = () => {
     queryKey: ['profile-stats', user?.id],
     queryFn: async (): Promise<ProfileStats> => {
       try {
-        const response = await apiCall<{data: any}>('GET', '/farmers/dashboard');
-        if (response.data && response.data.stats) {
-          const backendStats = response.data.stats;
+        const response = await apiCall<DashboardResponse>('GET', '/farmers/dashboard');
+        const dashboardData = response.data as { farmer?: unknown; stats?: unknown };
+        if (dashboardData && dashboardData.stats) {
+          const backendStats = dashboardData.stats as { totalAdopters?: number };
           return {
             total_adopters: backendStats.totalAdopters || 0,
             total_visits: 0, // This would need to be added to backend
             profile_views: 0, // This would need to be added to backend
             rating: 4.5, // This would need to be calculated from reviews
-            total_earnings: backendStats.totalEarnings || 0
+            total_earnings: (backendStats as { totalEarnings?: number }).totalEarnings || 0
           };
         }
         // Return default stats if no data found
@@ -157,24 +233,26 @@ const FarmProfileManager = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: Partial<FarmProfile>) => {
-      const payload: any = {};
+      const payload: UpdatePayload = {};
       if (profileData.farm_name && profileData.farm_name.trim()) payload.farmName = profileData.farm_name.trim();
       if (profileData.description && profileData.description.trim()) payload.description = profileData.description.trim();
       // Only allow backend enum values for farmingType
       const allowedFarmingTypes = ['crop', 'livestock', 'mixed', 'aquaculture', 'apiary'];
-      if ((profileData as any).farming_type && allowedFarmingTypes.includes((profileData as any).farming_type)) {
-        payload.farmingType = [(profileData as any).farming_type];
+      const formDataTyped = profileData as FarmProfile;
+      if (formDataTyped.farming_type && allowedFarmingTypes.includes(formDataTyped.farming_type)) {
+        payload.farmingType = [formDataTyped.farming_type];
       } else if (Array.isArray(profileData.crop_types) && profileData.crop_types.length > 0) {
         const type = 'crop';
         if (allowedFarmingTypes.includes(type)) payload.farmingType = [type];
       }
 
       // Prefer structured location fields from the form
-      if ((profileData as any).location_county || (profileData as any).location_subCounty || (profileData as any).location_village) {
-        const loc: any = {};
-        const county = ((profileData as any).location_county || '').toString().trim();
-        const subCounty = ((profileData as any).location_subCounty || '').toString().trim();
-        const village = ((profileData as any).location_village || '').toString().trim();
+      const formData = profileData as FarmProfile & { location_county?: string; location_subCounty?: string; location_village?: string };
+      if (formData.location_county || formData.location_subCounty || formData.location_village) {
+        const loc: LocationData = {};
+        const county = (formData.location_county || '').toString().trim();
+        const subCounty = (formData.location_subCounty || '').toString().trim();
+        const village = (formData.location_village || '').toString().trim();
         if (county) loc.county = county;
         if (subCounty) loc.subCounty = subCounty;
         if (village) loc.village = village;
@@ -184,18 +262,18 @@ const FarmProfileManager = () => {
         const [countyRaw, subCountyRaw] = profileData.location.split(',');
         const county = countyRaw?.trim();
         const subCounty = subCountyRaw?.trim();
-        const loc: any = {};
+        const loc: LocationData = {};
         if (county) loc.county = county;
         if (subCounty) loc.subCounty = subCounty;
         if (Object.keys(loc).length > 0) payload.location = loc;
       }
 
       if (typeof profileData.farm_size === 'number') {
-        payload.farmSize = payload.farmSize || {};
+        payload.farmSize = payload.farmSize || { value: 0, unit: 'acres' };
         payload.farmSize.value = profileData.farm_size;
       }
       if (profileData.farm_size_unit) {
-        payload.farmSize = payload.farmSize || {};
+        payload.farmSize = payload.farmSize || { value: 0, unit: 'acres' };
         payload.farmSize.unit = profileData.farm_size_unit;
       }
       if (typeof profileData.established_year === 'number') payload.establishedYear = profileData.established_year;
@@ -213,11 +291,12 @@ const FarmProfileManager = () => {
       if (Array.isArray(profileData.farming_methods) && profileData.farming_methods.length > 0) {
         payload.farmingMethods = profileData.farming_methods;
       }
-      if (Array.isArray(profileData.certifications)) payload.certifications = profileData.certifications;
+      // Note: certifications not supported in current UpdatePayload interface
       // Map settings booleans and hours to backend
-      if (typeof (profileData as any).public_visibility === 'boolean') payload.isActive = (profileData as any).public_visibility;
-      if (typeof (profileData as any).allow_visits === 'boolean') payload.allowVisits = (profileData as any).allow_visits;
-      if ((profileData as any).operating_hours) payload.operatingHours = (profileData as any).operating_hours;
+      const extendedFormData = profileData as FarmProfile & { public_visibility?: boolean; allow_visits?: boolean; operating_hours?: string };
+      if (typeof extendedFormData.public_visibility === 'boolean') payload.isActive = extendedFormData.public_visibility;
+      if (typeof extendedFormData.allow_visits === 'boolean') payload.allowVisits = extendedFormData.allow_visits;
+      if (extendedFormData.operating_hours) payload.operatingHours = extendedFormData.operating_hours;
 
       return await apiCall('PATCH', '/farmers/profile', payload);
     },
@@ -229,11 +308,12 @@ const FarmProfileManager = () => {
       queryClient.invalidateQueries({ queryKey: ['farm-profile'] });
       setIsEditing(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('Profile update error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to update profile",
+        description: errorMessage || "Failed to update profile",
         variant: "destructive",
       });
     }
@@ -264,11 +344,12 @@ const FarmProfileManager = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['farm-profile'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('Image upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to upload image",
+        description: errorMessage || "Failed to upload image",
         variant: "destructive",
       });
     }
@@ -361,7 +442,7 @@ const FarmProfileManager = () => {
                 <Avatar className="w-32 h-32 border-4 border-white">
                   <AvatarImage src={profile.profile_image} />
                   <AvatarFallback className="text-2xl">
-                    {profile.farm_name?.charAt(0) || user?.name?.charAt(0)}
+                    {(profile.farm_name as string)?.charAt(0) || (user?.name as string)?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 {isEditing && (
@@ -543,14 +624,35 @@ const FarmDetailsForm = ({
   }, [profile.farm_name, profile.description, profile.farm_size, profile.farm_size_unit, profile.crop_types, profile.farming_methods, profile.established_year]);
 
   const cropOptions = [
-    'Maize', 'Beans', 'Rice', 'Wheat', 'Vegetables', 'Fruits', 'Coffee', 'Tea', 
-    'Sugarcane', 'Cotton', 'Sunflower', 'Sorghum', 'Millet'
+    { value: 'maize', label: 'Maize' },
+    { value: 'beans', label: 'Beans' },
+    { value: 'rice', label: 'Rice' },
+    { value: 'wheat', label: 'Wheat' },
+    { value: 'vegetables', label: 'Vegetables' },
+    { value: 'fruits', label: 'Fruits' },
+    { value: 'coffee', label: 'Coffee' },
+    { value: 'tea', label: 'Tea' },
+    { value: 'sugarcane', label: 'Sugarcane' },
+    { value: 'cotton', label: 'Cotton' },
+    { value: 'sunflower', label: 'Sunflower' },
+    { value: 'sorghum', label: 'Sorghum' },
+    { value: 'millet', label: 'Millet' }
   ];
 
   const farmingMethodOptions = [
-    'Organic', 'Conventional', 'Permaculture', 'Hydroponics', 'Agroforestry', 
-    'Conservation Agriculture', 'Precision Farming', 'Sustainable Agriculture'
+    { value: 'organic', label: 'Organic' },
+    { value: 'conventional', label: 'Conventional' },
+    { value: 'permaculture', label: 'Permaculture' },
+    { value: 'hydroponics', label: 'Hydroponics' },
+    { value: 'agroforestry', label: 'Agroforestry' },
+    { value: 'conservation_agriculture', label: 'Conservation Agriculture' },
+    { value: 'precision_farming', label: 'Precision Farming' },
+    { value: 'sustainable_agriculture', label: 'Sustainable Agriculture' }
   ];
+
+  // Helper functions to convert between values and labels
+  const getCropLabel = (value: string) => cropOptions.find(c => c.value === value)?.label || value;
+  const getFarmingMethodLabel = (value: string) => farmingMethodOptions.find(m => m.value === value)?.label || value;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -567,7 +669,6 @@ const FarmDetailsForm = ({
       errors.push('Please provide Sub-County when setting County.');
     }
     if (errors.length > 0) {
-      // eslint-disable-next-line no-alert
       alert(errors.join('\n'));
       return;
     }
@@ -716,20 +817,20 @@ const FarmDetailsForm = ({
             <div className="flex flex-wrap gap-2 mt-2">
               {cropOptions.map((crop) => (
                 <Badge
-                  key={crop}
-                  variant={formData.crop_types.includes(crop) ? "default" : "outline"}
+                  key={crop.value}
+                  variant={formData.crop_types.includes(crop.value) ? "default" : "outline"}
                   className={`cursor-pointer ${
-                    formData.crop_types.includes(crop) ? 'bg-farmer-primary' : ''
+                    formData.crop_types.includes(crop.value) ? 'bg-farmer-primary' : ''
                   }`}
                   onClick={() => {
                     if (!isEditing) return;
-                    const newCrops = formData.crop_types.includes(crop)
-                      ? formData.crop_types.filter(c => c !== crop)
-                      : [...formData.crop_types, crop];
+                    const newCrops = formData.crop_types.includes(crop.value)
+                      ? formData.crop_types.filter(c => c !== crop.value)
+                      : [...formData.crop_types, crop.value];
                     setFormData({ ...formData, crop_types: newCrops });
                   }}
                 >
-                  {crop}
+                  {crop.label}
                 </Badge>
               ))}
             </div>
@@ -740,20 +841,20 @@ const FarmDetailsForm = ({
             <div className="flex flex-wrap gap-2 mt-2">
               {farmingMethodOptions.map((method) => (
                 <Badge
-                  key={method}
-                  variant={formData.farming_methods.includes(method) ? "default" : "outline"}
+                  key={method.value}
+                  variant={formData.farming_methods.includes(method.value) ? "default" : "outline"}
                   className={`cursor-pointer ${
-                    formData.farming_methods.includes(method) ? 'bg-farmer-primary' : ''
+                    formData.farming_methods.includes(method.value) ? 'bg-farmer-primary' : ''
                   }`}
                   onClick={() => {
                     if (!isEditing) return;
-                    const newMethods = formData.farming_methods.includes(method)
-                      ? formData.farming_methods.filter(m => m !== method)
-                      : [...formData.farming_methods, method];
+                    const newMethods = formData.farming_methods.includes(method.value)
+                      ? formData.farming_methods.filter(m => m !== method.value)
+                      : [...formData.farming_methods, method.value];
                     setFormData({ ...formData, farming_methods: newMethods });
                   }}
                 >
-                  {method}
+                  {method.label}
                 </Badge>
               ))}
             </div>

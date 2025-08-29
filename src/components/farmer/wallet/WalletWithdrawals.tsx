@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, ArrowDownLeft, ArrowUpRight, Clock, CheckCircle, XCircle, CreditCard, Phone } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { WalletTransaction } from '@/types/api';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { farmerService } from '@/services/farmer';
 
 interface WalletBalance {
   total_earnings: number;
@@ -32,12 +33,27 @@ interface Transaction {
   reference?: string;
 }
 
+interface BankDetails {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  branchCode?: string;
+}
+
+interface MobileMoneyDetails {
+  provider: string;
+  phoneNumber: string;
+  accountName: string;
+}
+
+type AccountDetails = BankDetails | MobileMoneyDetails;
+
 interface WithdrawalRequest {
   id: string;
   amount: number;
   currency: string;
   method: 'bank' | 'mobile_money';
-  account_details: any;
+  account_details: AccountDetails;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   processed_at?: string;
@@ -52,9 +68,16 @@ const WalletWithdrawals = () => {
   // Fetch wallet balance
   const { data: balance } = useQuery({
     queryKey: ['wallet-balance', user?.id],
-    queryFn: async (): Promise<WalletBalance> => {
-      const response = await apiCall<{ data: WalletBalance }>('/api/wallet/balance', 'GET');
-      return response.data;
+    queryFn: async () => {
+      const response = await farmerService.getWalletBalance();
+      // Transform the basic balance response to match expected interface
+      return {
+        total_earnings: response.balance,
+        available_balance: response.balance,
+        pending_balance: 0,
+        total_withdrawn: 0,
+        currency: response.currency
+      } as WalletBalance;
     },
     enabled: !!user
   });
@@ -62,9 +85,9 @@ const WalletWithdrawals = () => {
   // Fetch transactions
   const { data: transactions = [] } = useQuery({
     queryKey: ['wallet-transactions', user?.id],
-    queryFn: async (): Promise<Transaction[]> => {
-      const response = await apiCall<{ data: Transaction[] }>('/api/wallet/transactions', 'GET');
-      return response.data;
+    queryFn: async (): Promise<WalletTransaction[]> => {
+      const response = await farmerService.getWalletTransactions();
+      return response.transactions as unknown as WalletTransaction[];
     },
     enabled: !!user
   });
@@ -73,8 +96,8 @@ const WalletWithdrawals = () => {
   const { data: withdrawalRequests = [] } = useQuery({
     queryKey: ['withdrawal-requests', user?.id],
     queryFn: async (): Promise<WithdrawalRequest[]> => {
-      const response = await apiCall<{ data: WithdrawalRequest[] }>('/api/wallet/withdrawals', 'GET');
-      return response.data;
+      const response = await farmerService.getWithdrawalRequests();
+      return (response.withdrawals || []) as unknown as WithdrawalRequest[];
     },
     enabled: !!user
   });
@@ -84,9 +107,9 @@ const WalletWithdrawals = () => {
     mutationFn: async (withdrawalData: {
       amount: number;
       method: string;
-      account_details: any;
+      account_details: AccountDetails;
     }) => {
-      return await apiCall('/api/wallet/withdraw', 'POST', withdrawalData);
+      return await farmerService.requestWithdrawal(withdrawalData);
     },
     onSuccess: () => {
       toast({
@@ -97,10 +120,10 @@ const WalletWithdrawals = () => {
       queryClient.invalidateQueries({ queryKey: ['withdrawal-requests'] });
       setShowWithdrawDialog(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to process withdrawal request",
+        description: error instanceof Error ? error.message : "Failed to process withdrawal request",
         variant: "destructive",
       });
     }
@@ -245,24 +268,24 @@ const WalletWithdrawals = () => {
             <CardContent>
               <div className="space-y-4">
                 {transactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={(transaction as WalletTransaction & { id?: string })._id || (transaction as WalletTransaction & { id?: string }).id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
                       {getTransactionIcon(transaction.type)}
                       <div>
                         <p className="font-medium">{transaction.description}</p>
                         <p className="text-sm text-gray-500">
-                          {new Date(transaction.created_at).toLocaleDateString()}
+                          {new Date((transaction as WalletTransaction & { created_at?: string }).date || (transaction as WalletTransaction & { created_at?: string }).created_at || new Date()).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className={`font-semibold ${
-                        transaction.type === 'earning' || transaction.type === 'support' 
+                        transaction.type === 'credit' 
                           ? 'text-green-600' 
                           : 'text-red-600'
                       }`}>
-                        {transaction.type === 'earning' || transaction.type === 'support' ? '+' : '-'}
-                        {formatCurrency(transaction.amount, transaction.currency)}
+                        {transaction.type === 'credit' ? '+' : '-'}
+                        {formatCurrency(transaction.amount, (transaction as WalletTransaction & { currency?: string }).currency || 'KES')}
                       </p>
                       <Badge className={getStatusColor(transaction.status)}>
                         <span className="flex items-center">
@@ -335,6 +358,12 @@ const WalletWithdrawals = () => {
 };
 
 // Withdrawal Form Component
+interface WithdrawalFormData {
+  amount: number;
+  method: string;
+  account_details: AccountDetails;
+}
+
 const WithdrawalForm = ({ 
   availableBalance, 
   currency, 
@@ -343,7 +372,7 @@ const WithdrawalForm = ({
 }: {
   availableBalance: number;
   currency: string;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: WithdrawalFormData) => void;
   isLoading: boolean;
 }) => {
   const [formData, setFormData] = useState({
@@ -369,7 +398,7 @@ const WithdrawalForm = ({
     onSubmit({
       amount: formData.amount,
       method: formData.method,
-      account_details
+      account_details: account_details as unknown as AccountDetails
     });
   };
 

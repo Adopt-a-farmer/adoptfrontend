@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Search, Send, MessageCircle, Phone, Video, MoreVertical, Paperclip, Smile } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface Message {
@@ -50,7 +50,7 @@ const MessagingCenter = () => {
     queryKey: ['conversations', user?.id],
     queryFn: async (): Promise<Conversation[]> => {
       try {
-        const response = await apiCall<Conversation[]>('/api/messages/conversations', 'GET');
+        const response = await apiCall<Conversation[]>('GET', '/messages/conversations');
         return response;
       } catch (error) {
         // Return mock data for demonstration
@@ -66,7 +66,7 @@ const MessagingCenter = () => {
     queryFn: async (): Promise<Message[]> => {
       if (!selectedConversation) return [];
       try {
-        const response = await apiCall<Message[]>(`/api/messages/conversations/${selectedConversation.id}/messages`, 'GET');
+        const response = await apiCall<Message[]>('GET', `/messages/conversations/${selectedConversation.id}/messages`);
         return response;
       } catch (error) {
         // Return mock data for demonstration
@@ -83,7 +83,7 @@ const MessagingCenter = () => {
       content: string;
       type?: string;
     }) => {
-      return await apiCall('/api/messages', 'POST', {
+      return await apiCall('POST', '/messages', {
         conversation_id: conversationId,
         content,
         type
@@ -94,10 +94,10 @@ const MessagingCenter = () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       setNewMessage('');
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to send message",
+        description: (error as Error)?.message || "Failed to send message",
         variant: "destructive",
       });
     }

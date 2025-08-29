@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { apiCall } from '@/services/api';
 
@@ -50,7 +50,7 @@ export const useAdopterDashboard = () => {
       if (!user?.id) throw new Error('User not authenticated');
 
       try {
-        const response = await apiCall<DashboardStats>('/api/adopters/dashboard-stats', 'GET');
+        const response = await apiCall<DashboardStats>('GET', '/adopters/dashboard-stats');
         return response;
       } catch (error) {
         // Return default values if API fails
@@ -74,7 +74,7 @@ export const useAdopterDashboard = () => {
       if (!user?.id) throw new Error('User not authenticated');
 
       try {
-        const response = await apiCall<FarmerUpdate[]>('/api/adopters/recent-updates', 'GET');
+        const response = await apiCall<FarmerUpdate[]>('GET', '/adopters/recent-updates');
         return response;
       } catch (error) {
         return [];
@@ -90,7 +90,7 @@ export const useAdopterDashboard = () => {
       if (!user?.id) throw new Error('User not authenticated');
 
       try {
-        const response = await apiCall<AdoptionDetails[]>('/api/adopters/adopted-farmers', 'GET');
+        const response = await apiCall<AdoptionDetails[]>('GET', '/adopters/adopted-farmers');
         return response;
       } catch (error) {
         return [];
@@ -102,7 +102,7 @@ export const useAdopterDashboard = () => {
   // Update contribution mutation
   const updateContributionMutation = useMutation({
     mutationFn: async ({ adoptionId, newAmount }: { adoptionId: string; newAmount: number }) => {
-      await apiCall(`/api/adopters/update-contribution/${adoptionId}`, 'PUT', {
+      await apiCall('PUT', `/adopters/update-contribution/${adoptionId}`, {
         monthly_contribution: newAmount
       });
     },

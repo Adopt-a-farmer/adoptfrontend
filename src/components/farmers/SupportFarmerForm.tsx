@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { apiCall } from '@/services/api';
 
 interface SupportFarmerFormProps {
@@ -59,7 +59,7 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
     try {
       // Create adoption if it's monthly support
       if (values.supportType === 'monthly') {
-        await apiCall('/api/adopters/adopt', 'POST', {
+        await apiCall('POST', '/adopters/adopt', {
           farmer_id: farmer.id,
           monthly_contribution: Number(values.amount)
         });
@@ -70,7 +70,7 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
         });
       } else {
         // Create payment for one-time donation or project funding
-        const paymentResponse = await apiCall('/api/payments/create-payment', 'POST', {
+        const paymentResponse = await apiCall('POST', '/payments/create-payment', {
           farmer_id: farmer.id,
           amount: Number(values.amount),
           currency: 'KES',
@@ -78,19 +78,19 @@ const SupportFarmerForm = ({ farmer }: SupportFarmerFormProps) => {
         });
 
         // Redirect to Paystack payment page
-        if (paymentResponse.authorization_url) {
-          window.location.href = paymentResponse.authorization_url;
+        if (paymentResponse && typeof paymentResponse === 'object' && 'authorization_url' in paymentResponse) {
+          window.location.href = paymentResponse.authorization_url as string;
         } else {
           throw new Error('Payment initialization failed');
         }
       }
       
       form.reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error processing support:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to process support. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process support. Please try again.",
         variant: "destructive",
       });
     } finally {

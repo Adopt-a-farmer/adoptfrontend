@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/mock/client';
 import { User, Camera, Shield, CreditCard, Download, Settings, Trash2, Eye, EyeOff, Bell, FileText, Lock } from 'lucide-react';
 
@@ -96,7 +96,7 @@ const ProfileSettings = () => {
   useEffect(() => {
     loadProfileData();
     loadActivitySummary();
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProfileData = async () => {
     if (!user) return;
@@ -145,14 +145,15 @@ const ProfileSettings = () => {
         .eq('status', 'active');
 
       if (payments) {
-        const totalContributions = payments.reduce((sum, payment) => sum + payment.amount, 0);
-        const averageMonthly = payments.length > 0 ? totalContributions / payments.length : 0;
+        const typedPayments = payments as Array<{ amount: number; payment_date: string }>;
+        const totalContributions = typedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        const averageMonthly = typedPayments.length > 0 ? totalContributions / typedPayments.length : 0;
         
         setActivitySummary({
           lifetime_contributions: totalContributions,
           farmers_adopted: adoptions?.length || 0,
           average_monthly: averageMonthly,
-          last_payment_date: payments[0]?.payment_date || null,
+          last_payment_date: typedPayments[0]?.payment_date || null,
           upcoming_payment: null
         });
       }

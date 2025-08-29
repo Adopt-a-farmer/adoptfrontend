@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { apiCall } from '@/services/api';
 
 export interface FarmerDashboardStats {
@@ -40,7 +40,7 @@ export const useFarmerDashboard = () => {
       if (!user?.id) throw new Error('User not authenticated');
 
       try {
-        const response = await apiCall<{data: any}>('GET', '/farmers/dashboard');
+        const response = await apiCall<{data: {farmer: unknown; stats: unknown; recentActivity: unknown[]; tasks: unknown[]}}>('GET', '/farmers/dashboard');
         console.log('Dashboard data received:', response);
         return response.data;
       } catch (error) {
@@ -52,19 +52,20 @@ export const useFarmerDashboard = () => {
   });
 
   // Transform the backend data to match our component expectations
-  const farmerProfile = dashboardData?.farmer ? {
-    name: dashboardData.farmer.farmName || `${dashboardData.farmer.user?.firstName} ${dashboardData.farmer.user?.lastName}`,
-    ...dashboardData.farmer
+  const farmerProfile = dashboardData?.farmer && typeof dashboardData.farmer === 'object' ? {
+    name: (dashboardData.farmer as { farmName?: string; user?: { firstName?: string; lastName?: string } }).farmName || 
+          `${(dashboardData.farmer as { farmName?: string; user?: { firstName?: string; lastName?: string } }).user?.firstName || ''} ${(dashboardData.farmer as { farmName?: string; user?: { firstName?: string; lastName?: string } }).user?.lastName || ''}`.trim() || 'Farm Name',
+    ...(dashboardData.farmer as Record<string, unknown>)
   } : null;
 
-  const stats: FarmerDashboardStats = dashboardData?.stats ? {
-    activeAdopters: dashboardData.stats.totalAdopters || 0,
-    totalContributions: dashboardData.stats.totalEarnings || 0,
-    upcomingVisits: 0, // Would need to be added to backend
-    updatesShared: 0, // Would need to be added to backend
-    monthlyGoalProgress: 65, // Mock data - would need backend implementation
+  const stats: FarmerDashboardStats = dashboardData?.stats && typeof dashboardData.stats === 'object' ? {
+    activeAdopters: (dashboardData.stats as { activeAdopters?: number }).activeAdopters || 0,
+    totalContributions: (dashboardData.stats as { totalEarnings?: number }).totalEarnings || 0,
+    upcomingVisits: (dashboardData.stats as { upcomingVisits?: number }).upcomingVisits || 0,
+    updatesShared: (dashboardData.stats as { totalUpdates?: number }).totalUpdates || 0,
+    monthlyGoalProgress: (dashboardData.stats as { monthlyGoalProgress?: number }).monthlyGoalProgress || 65,
     adopterSatisfaction: 85, // Mock data - would need backend implementation
-    successfulVisits: 0 // Would need to be added to backend
+    successfulVisits: (dashboardData.stats as { completedVisits?: number }).completedVisits || 0
   } : {
     activeAdopters: 0,
     totalContributions: 0,
@@ -75,60 +76,33 @@ export const useFarmerDashboard = () => {
     successfulVisits: 0
   };
 
-  // Transform recent activity from adoptions and payments
-  const recentActivity: RecentActivity[] = [];
-  
-  if (dashboardData?.adoptions) {
-    dashboardData.adoptions.slice(0, 5).forEach((adoption: any, index: number) => {
-      recentActivity.push({
-        id: `adoption-${adoption._id}`,
-        action: 'New adoption',
-        user: adoption.adopter ? `${adoption.adopter.firstName} ${adoption.adopter.lastName}` : 'Anonymous',
-        time: new Date(adoption.createdAt).toLocaleDateString(),
-        created_at: adoption.createdAt
-      });
-    });
-  }
+  // Use backend-provided recent activity if available, otherwise transform from adoptions/payments
+  const recentActivity: RecentActivity[] = dashboardData?.recentActivity ? 
+    dashboardData.recentActivity.map((activity: { type: string; description: string; data?: unknown; date: string }, index: number) => ({
+      id: `${activity.type}-${index}`,
+      action: activity.description,
+      user: activity.data && typeof activity.data === 'object' && 'adopter' in activity.data && activity.data.adopter && typeof activity.data.adopter === 'object' 
+        ? `${(activity.data.adopter as { firstName?: string; lastName?: string }).firstName || ''} ${(activity.data.adopter as { firstName?: string; lastName?: string }).lastName || ''}`.trim() 
+        : undefined,
+      amount: activity.type === 'payment' && activity.data && typeof activity.data === 'object' && 'netAmount' in activity.data 
+        ? `KES ${(activity.data.netAmount as number)?.toLocaleString()}` 
+        : undefined,
+      content: activity.type === 'update' && activity.data && typeof activity.data === 'object' && 'title' in activity.data 
+        ? activity.data.title as string 
+        : undefined,
+      time: new Date(activity.date).toLocaleDateString(),
+      created_at: activity.date
+    })) : [];
 
-  if (dashboardData?.payments) {
-    dashboardData.payments.slice(0, 3).forEach((payment: any) => {
-      recentActivity.push({
-        id: `payment-${payment._id}`,
-        action: 'Payment received',
-        amount: `KES ${payment.netAmount?.toLocaleString()}`,
-        time: new Date(payment.createdAt).toLocaleDateString(),
-        created_at: payment.createdAt
-      });
-    });
-  }
-
-  // Sort recent activity by date
-  recentActivity.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-  // Generate tasks based on farmer's current state
-  const tasks: Task[] = [
-    {
-      id: 'update-needed',
-      task: 'Share progress update with photos',
-      priority: 'High',
-      dueDate: 'Today',
-      type: 'update'
-    },
-    {
-      id: 'respond-messages',
-      task: 'Respond to adopter messages',
-      priority: 'Medium',
-      dueDate: 'Tomorrow',
-      type: 'communication'
-    },
-    {
-      id: 'profile-optimization',
-      task: 'Complete farm profile optimization',
-      priority: 'Low',
-      dueDate: '1 week',
-      type: 'profile'
-    }
-  ];
+  // Use backend-provided tasks if available, otherwise use default tasks
+  const tasks: Task[] = dashboardData?.tasks ? 
+    dashboardData.tasks.map((task: { id: string; title: string; priority: string; dueDate?: string }) => ({
+      id: task.id,
+      task: task.title,
+      priority: task.priority === 'high' ? 'High' : task.priority === 'medium' ? 'Medium' : 'Low',
+      dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date',
+      type: task.id.split('_')[0] // Extract type from task ID
+    })) : [];
 
   return {
     farmerProfile,

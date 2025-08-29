@@ -19,7 +19,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Adoption {
   _id: string;
@@ -55,7 +55,7 @@ const AdopterRelationshipCenter = () => {
 
   useEffect(() => {
     fetchAdopters();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchAdopters = async () => {
     try {

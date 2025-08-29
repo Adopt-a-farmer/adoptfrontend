@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Users, Wallet, Calendar, Book, MessageCircle, TrendingUp, Bell } from 'lucide-react';
 import { useAdopterDashboard } from '@/hooks/useAdopterDashboard';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 
 const DashboardOverview = () => {

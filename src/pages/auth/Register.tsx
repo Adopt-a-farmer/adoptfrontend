@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,10 +26,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   phoneNumber: z.string().min(10, { message: 'Phone number must be at least 10 characters.' }),
   password: z.string()
-    .min(6, { message: 'Password must be at least 6 characters.' })
-    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter.' })
-    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter.' })
-    .regex(/[0-9]/, { message: 'Password must contain at least one number.' }),
+    .min(1, { message: 'Password is required.' }),
   confirmPassword: z.string(),
   role: z.enum(['farmer', 'adopter', 'expert'], {
     required_error: 'Please select your role.',
@@ -93,14 +90,15 @@ const Register = () => {
         }
       }, 1000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration failed:', error);
       
       let errorMessage = 'Registration failed. Please try again.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+      const apiError = error as { response?: { data?: { message?: string } }; message?: string };
+      if (apiError.response?.data?.message) {
+        errorMessage = apiError.response.data.message;
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
       }
       
       toast({

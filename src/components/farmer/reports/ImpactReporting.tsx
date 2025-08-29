@@ -10,8 +10,8 @@ import {
   Award, Droplets, Recycle, Sun, TreePine, Wheat
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
+import { farmerService } from '@/services/farmer';
 
 interface ImpactMetrics {
   environmental: {
@@ -85,11 +85,8 @@ const ImpactReporting = () => {
     queryKey: ['impact-reports', selectedPeriod, selectedYear],
     queryFn: async (): Promise<ImpactReport[]> => {
       try {
-        const response = await apiCall<ImpactReport[]>(
-          `/api/farmers/reports/impact?period=${selectedPeriod}&year=${selectedYear}`, 
-          'GET'
-        );
-        return response;
+        const response = await farmerService.getReports(selectedPeriod);
+        return (response.reports as unknown as ImpactReport[]) || mockReports;
       } catch (error) {
         // Return mock data for demonstration
         return mockReports;
@@ -103,11 +100,8 @@ const ImpactReporting = () => {
     queryKey: ['impact-comparison', selectedPeriod],
     queryFn: async (): Promise<ImpactComparison> => {
       try {
-        const response = await apiCall<ImpactComparison>(
-          `/api/farmers/reports/impact/comparison?period=${selectedPeriod}`, 
-          'GET'
-        );
-        return response;
+        const response = await farmerService.getReports(selectedPeriod);
+        return (response.reports?.comparison as ImpactComparison) || mockComparison;
       } catch (error) {
         // Return mock data for demonstration
         return mockComparison;

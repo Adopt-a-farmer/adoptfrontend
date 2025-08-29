@@ -13,7 +13,7 @@ const PaymentCallback = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading');
-  const [paymentData, setPaymentData] = useState<any>(null);
+  const [paymentData, setPaymentData] = useState<unknown>(null);
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -25,7 +25,7 @@ const PaymentCallback = () => {
       }
 
       try {
-        const response = await apiCall('/api/payments/verify-payment', 'POST', {
+        const response = await apiCall<{ status: string; data: unknown }>('POST', '/payments/verify-payment', {
           reference
         });
 
@@ -111,10 +111,10 @@ const PaymentCallback = () => {
                   {paymentData && (
                     <div className="bg-green-50 p-4 rounded-lg">
                       <p className="text-sm text-green-800">
-                        Amount: KES {paymentData.amount?.toLocaleString()}
+                        Amount: KES {(paymentData as { amount?: number })?.amount?.toLocaleString()}
                       </p>
                       <p className="text-sm text-green-800">
-                        Reference: {paymentData.reference}
+                        Reference: {(paymentData as { reference?: string })?.reference}
                       </p>
                     </div>
                   )}

@@ -14,7 +14,7 @@ import { useFarmerCategories } from '@/hooks/useFarmerCategories';
 import { FarmerWithAdoptionInfo } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/mock/client';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 const DiscoverFarmers = () => {
   const { user } = useAuth();
@@ -101,11 +101,11 @@ const DiscoverFarmers = () => {
         title: "Payment Initiated",
         description: "Complete your payment to adopt this farmer. The page will open in a new tab.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to initialize payment:', error);
       toast({
         title: "Payment Error",
-        description: error.message || "Failed to initialize payment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to initialize payment. Please try again.",
         variant: "destructive"
       });
     } finally {

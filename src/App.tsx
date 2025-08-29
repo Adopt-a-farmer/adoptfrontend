@@ -10,8 +10,15 @@ import HowItWorksPage from "./pages/HowItWorks";
 import BrowseFarmers from "./pages/BrowseFarmers";
 import FarmerDetail from "./pages/FarmerDetail";
 import PaymentCallback from "./pages/PaymentCallback";
+import FarmAdoptionPage from "./pages/FarmAdoptionPage";
+import KnowledgeHub from "./pages/KnowledgeHub";
+import ArticleDetail from "./pages/ArticleDetail";
+
 // Farmer pages
 import FarmerDashboard from "./pages/farmer/FarmerDashboard";
+
+// Expert pages  
+import ExpertDashboard from "./pages/expert/ExpertDashboard";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -43,7 +50,10 @@ const AppContent = () => {
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/browse-farmers" element={<BrowseFarmers />} />
       <Route path="/farmers/:id" element={<FarmerDetail />} />
+      <Route path="/farmers/:id/adopt" element={<FarmAdoptionPage />} />
       <Route path="/payment/callback" element={<PaymentCallback />} />
+      <Route path="/knowledge" element={<KnowledgeHub />} />
+      <Route path="/knowledge/articles/:id" element={<ArticleDetail />} />
       
       {/* Auth Routes */}
       <Route path="/auth/login" element={<Login />} />
@@ -94,6 +104,16 @@ const AppContent = () => {
         element={
           <ProtectedRoute requireFarmer>
             <FarmerDashboard />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Expert Routes */}
+      <Route 
+        path="/expert/*" 
+        element={
+          <ProtectedRoute allowedRoles={['expert']}>
+            <ExpertDashboard />
           </ProtectedRoute>
         }
       />

@@ -15,11 +15,11 @@ export const useFarmers = () => {
     try {
       const data = await apiCall<Farmer[]>('GET', '/farmers');
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching farmers:', error);
       toast({
         title: 'Error fetching farmers',
-        description: error.message || 'Failed to fetch farmers',
+        description: error instanceof Error ? error.message : 'Failed to fetch farmers',
         variant: 'destructive',
       });
       return [];
@@ -41,7 +41,7 @@ export const useFarmers = () => {
       // Combine county and constituency for the location field
       const formattedLocation = `${data.county}, ${data.constituency}`;
       
-      await apiCall('POST', '/api/farmers', {
+      await apiCall('POST', '/farmers', {
         name: data.name,
         location: formattedLocation,
         description: data.description || null,
@@ -62,11 +62,11 @@ export const useFarmers = () => {
       });
       
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding farmer:', error);
       toast({
         title: 'Error adding farmer',
-        description: error.message || 'Failed to add farmer',
+        description: error instanceof Error ? error.message : 'Failed to add farmer',
         variant: 'destructive',
       });
       return false;
@@ -78,7 +78,7 @@ export const useFarmers = () => {
       // Combine county and constituency for the location field
       const formattedLocation = `${data.county}, ${data.constituency}`;
       
-      await apiCall('PUT', `/api/farmers/${id}`, {
+      await apiCall('PUT', `/farmers/${id}`, {
         name: data.name,
         location: formattedLocation,
         description: data.description || null,
@@ -97,11 +97,11 @@ export const useFarmers = () => {
       });
       
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating farmer:', error);
       toast({
         title: 'Error updating farmer',
-        description: error.message || 'Failed to update farmer',
+        description: error instanceof Error ? error.message : 'Failed to update farmer',
         variant: 'destructive',
       });
       return false;
@@ -110,7 +110,7 @@ export const useFarmers = () => {
   
   const deleteFarmer = async (id: number) => {
     try {
-      await apiCall('DELETE', `/api/farmers/${id}`);
+      await apiCall('DELETE', `/farmers/${id}`);
       
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
       
@@ -120,11 +120,11 @@ export const useFarmers = () => {
       });
       
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting farmer:', error);
       toast({
         title: 'Error deleting farmer',
-        description: error.message || 'Failed to delete farmer',
+        description: error instanceof Error ? error.message : 'Failed to delete farmer',
         variant: 'destructive',
       });
       return false;
@@ -133,7 +133,7 @@ export const useFarmers = () => {
   
   const toggleFeatured = async (id: number, featured: boolean) => {
     try {
-      await apiCall('PUT', `/api/farmers/${id}/featured`, {
+      await apiCall('PUT', `/farmers/${id}/featured`, {
         featured: !featured
       });
       
@@ -145,11 +145,11 @@ export const useFarmers = () => {
       });
       
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating farmer:', error);
       toast({
         title: 'Error updating farmer',
-        description: error.message || 'Failed to update farmer',
+        description: error instanceof Error ? error.message : 'Failed to update farmer',
         variant: 'destructive',
       });
       return false;

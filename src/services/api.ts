@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Base API URL configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -113,20 +114,16 @@ api.interceptors.response.use(
 export const apiCall = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   endpoint: string,
-  data?: any,
-  config?: any
+  data?: unknown,
+  config?: Record<string, unknown>
 ): Promise<T> => {
-  try {
-    const response = await api.request({
-      method,
-      url: endpoint,
-      data,
-      ...config,
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.request({
+    method,
+    url: endpoint,
+    data,
+    ...config,
+  });
+  return response.data;
 };
 
 export default api;

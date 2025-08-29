@@ -26,7 +26,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { farmerService } from '@/services/farmer';
 
@@ -202,7 +202,7 @@ const CreateUpdateForm: React.FC<CreateUpdateFormProps> = ({
           <Label htmlFor="type">Type</Label>
           <Select 
             value={formData.type} 
-            onValueChange={(value: any) => setFormData(prev => ({ ...prev, type: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as typeof prev.type }))}
           >
             <SelectTrigger>
               <SelectValue />
@@ -222,7 +222,7 @@ const CreateUpdateForm: React.FC<CreateUpdateFormProps> = ({
           <Label htmlFor="visibility">Visibility</Label>
           <Select 
             value={formData.visibility} 
-            onValueChange={(value: any) => setFormData(prev => ({ ...prev, visibility: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, visibility: value as typeof prev.visibility }))}
           >
             <SelectTrigger>
               <SelectValue />
@@ -333,8 +333,8 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({
       clearInterval(interval);
       setUploadProgress(100);
 
-      if (response.url) {
-        onUploadComplete(response.url);
+      if ((response as { url?: string }).url) {
+        onUploadComplete((response as unknown as { url: string }).url);
         toast({
           title: "Upload successful",
           description: "Media file has been uploaded",
@@ -454,7 +454,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ media, onSelect, onDelete, 
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex items-center">
           <Label className="mr-2">Filter:</Label>
-          <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
+          <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -638,7 +638,7 @@ const UpdatesMediaManager: React.FC = () => {
   // Toggle pin mutation
   const togglePinMutation = useMutation({
     mutationFn: ({ id, isPinned }: { id: string; isPinned: boolean }) => 
-      farmerService.updateFarmUpdate(id, { is_pinned: isPinned }),
+      farmerService.updateFarmUpdate(id, { isPinned }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmUpdates'] });
     },
@@ -710,13 +710,13 @@ const UpdatesMediaManager: React.FC = () => {
 
   const filteredUpdates = updates?.updates 
     ? updates.updates.filter(update => {
-        if (updateFilter !== 'all' && update.type !== updateFilter) return false;
+        if (updateFilter !== 'all' && (update as { type?: string }).type !== updateFilter) return false;
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           return (
             update.title.toLowerCase().includes(query) ||
             update.content.toLowerCase().includes(query) ||
-            update.tags.some(tag => tag.toLowerCase().includes(query))
+            (update as { tags?: string[] }).tags?.some((tag: string) => tag.toLowerCase().includes(query))
           );
         }
         return true;
@@ -784,24 +784,24 @@ const UpdatesMediaManager: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {filteredUpdates.map((update) => (
-                <Card key={update._id} className={update.is_pinned ? 'border-green-500' : ''}>
+                <Card key={update._id} className={(update as { is_pinned?: boolean }).is_pinned ? 'border-green-500' : ''}>
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <CardTitle className="flex items-center">
-                          {update.is_pinned && <Pin className="h-4 w-4 mr-2 text-green-500" />}
+                          {(update as { is_pinned?: boolean }).is_pinned && <Pin className="h-4 w-4 mr-2 text-green-500" />}
                           {update.title}
                         </CardTitle>
                         <div className="flex flex-wrap gap-2 mt-2">
-                          <Badge className={getTypeColor(update.type)}>
-                            {getTypeIcon(update.type)}
-                            <span className="ml-1">{update.type.charAt(0).toUpperCase() + update.type.slice(1)}</span>
+                          <Badge className={getTypeColor((update as { type?: string }).type || 'general')}>
+                            {getTypeIcon((update as { type?: string }).type || 'general')}
+                            <span className="ml-1">{((update as { type?: string }).type || 'general').charAt(0).toUpperCase() + ((update as { type?: string }).type || 'general').slice(1)}</span>
                           </Badge>
-                          <Badge className={getVisibilityColor(update.visibility)}>
-                            {update.visibility === 'public' ? 'Public' : 
-                             update.visibility === 'adopters_only' ? 'Adopters Only' : 'Private'}
+                          <Badge className={getVisibilityColor((update as { visibility?: string }).visibility || 'public')}>
+                            {(update as { visibility?: string }).visibility === 'public' ? 'Public' : 
+                             (update as { visibility?: string }).visibility === 'adopters_only' ? 'Adopters Only' : 'Private'}
                           </Badge>
-                          {update.tags.map((tag) => (
+                          {((update as { tags?: string[] }).tags || []).map((tag) => (
                             <Badge key={tag} variant="outline">{tag}</Badge>
                           ))}
                         </div>
@@ -810,15 +810,15 @@ const UpdatesMediaManager: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleTogglePin(update._id, update.is_pinned)}
-                          title={update.is_pinned ? "Unpin update" : "Pin update"}
+                          onClick={() => handleTogglePin(update._id, (update as { is_pinned?: boolean }).is_pinned || false)}
+                          title={(update as { is_pinned?: boolean }).is_pinned ? "Unpin update" : "Pin update"}
                         >
-                          <Pin className={`h-4 w-4 ${update.is_pinned ? 'text-green-500 fill-green-500' : ''}`} />
+                          <Pin className={`h-4 w-4 ${(update as { is_pinned?: boolean }).is_pinned ? 'text-green-500 fill-green-500' : ''}`} />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEditUpdate(update)}
+                          onClick={() => handleEditUpdate(update as unknown as FarmUpdate)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -835,9 +835,9 @@ const UpdatesMediaManager: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm mb-4">{update.content}</p>
-                    {update.media_urls.length > 0 && (
+                    {((update as { media_urls?: string[] }).media_urls || []).length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {update.media_urls.slice(0, 4).map((url, idx) => (
+                        {((update as { media_urls?: string[] }).media_urls || []).slice(0, 4).map((url, idx) => (
                           <div key={idx} className="w-16 h-16 relative">
                             {url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
                               <img src={url} alt="Media" className="w-full h-full object-cover rounded" />
@@ -852,9 +852,9 @@ const UpdatesMediaManager: React.FC = () => {
                             )}
                           </div>
                         ))}
-                        {update.media_urls.length > 4 && (
+                        {((update as { media_urls?: string[] }).media_urls || []).length > 4 && (
                           <div className="w-16 h-16 bg-gray-100 flex items-center justify-center rounded">
-                            <span className="text-sm text-gray-500">+{update.media_urls.length - 4}</span>
+                            <span className="text-sm text-gray-500">+{((update as { media_urls?: string[] }).media_urls || []).length - 4}</span>
                           </div>
                         )}
                       </div>
@@ -863,18 +863,18 @@ const UpdatesMediaManager: React.FC = () => {
                       <div className="flex space-x-4">
                         <span className="flex items-center">
                           <Eye className="h-3.5 w-3.5 mr-1" />
-                          {update.views_count}
+                          {(update as { views_count?: number }).views_count || 0}
                         </span>
                         <span className="flex items-center">
                           <Heart className="h-3.5 w-3.5 mr-1" />
-                          {update.likes_count}
+                          {(update as { likes_count?: number }).likes_count || 0}
                         </span>
                         <span className="flex items-center">
                           <Share2 className="h-3.5 w-3.5 mr-1" />
-                          {update.comments_count}
+                          {(update as { comments_count?: number }).comments_count || 0}
                         </span>
                       </div>
-                      <span>{formatDate(update.created_at)}</span>
+                      <span>{formatDate((update as { created_at?: string; createdAt?: string }).created_at || (update as { created_at?: string; createdAt?: string }).createdAt || new Date().toISOString())}</span>
                     </div>
                   </CardContent>
                 </Card>

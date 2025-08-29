@@ -12,9 +12,12 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  Loader2
+  Loader2,
+  MessageCircle,
+  UserCheck
 } from 'lucide-react';
 import { useFarmerDashboard } from '@/hooks/useFarmerDashboard';
+import FarmerExpertChat from '../FarmerExpertChat';
 
 const DashboardHome = () => {
   const { farmerProfile, stats, recentActivity, tasks, isLoading } = useFarmerDashboard();
@@ -90,7 +93,12 @@ const DashboardHome = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Expert Chat Section - Takes 2 columns */}
+        <div className="lg:col-span-2">
+          <FarmerExpertChat />
+        </div>
+
         {/* What's Next Section */}
         <Card>
           <CardHeader>
@@ -122,6 +130,9 @@ const DashboardHome = () => {
             ))}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Recent Activity */}
         <Card>
@@ -159,8 +170,8 @@ const DashboardHome = () => {
               <span className="text-sm">Share Update</span>
             </Button>
             <Button variant="outline" className="h-20 flex flex-col gap-2">
-              <Users className="h-6 w-6" />
-              <span className="text-sm">Message Adopters</span>
+              <MessageCircle className="h-6 w-6" />
+              <span className="text-sm">Chat with Expert</span>
             </Button>
             <Button variant="outline" className="h-20 flex flex-col gap-2">
               <Calendar className="h-6 w-6" />

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/mock/client';
 import { FarmerAdoption, FarmerWithAdoptionInfo } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useFarmerAdoptions = () => {
@@ -23,11 +23,11 @@ export const useFarmerAdoptions = () => {
       
       console.log('Farmers with adoption info fetched:', data);
       return data || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching farmers with adoption info:', error);
       toast({
         title: 'Error fetching farmers',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Failed to fetch farmers',
         variant: 'destructive',
       });
       return [];
@@ -55,8 +55,8 @@ export const useFarmerAdoptions = () => {
       }
       
       console.log('My adoptions fetched:', data);
-      return data || [];
-    } catch (error: any) {
+      return (data as FarmerAdoption[]) || [];
+    } catch (error: unknown) {
       console.error('Error fetching my adoptions:', error);
       return [];
     }
@@ -80,13 +80,16 @@ export const useFarmerAdoptions = () => {
 
     try {
       console.log('Adopting farmer:', farmerId, 'with contribution:', monthlyContribution);
-      const { error } = await supabase
+      const result = await supabase
         .from('farmer_adoptions')
         .insert({
           farmer_id: farmerId,
           adopter_id: user.id,
           monthly_contribution: monthlyContribution,
         });
+
+      const error = (result as { error?: unknown }).error;
+      const data = (result as { data?: unknown }).data;
 
       if (error) {
         console.error('Error adopting farmer:', error);
@@ -102,11 +105,11 @@ export const useFarmerAdoptions = () => {
       });
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adopting farmer:', error);
       toast({
         title: 'Error adopting farmer',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Failed to adopt farmer',
         variant: 'destructive',
       });
       return false;
@@ -135,11 +138,11 @@ export const useFarmerAdoptions = () => {
       });
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating adoption:', error);
       toast({
         title: 'Error updating adoption',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Failed to update adoption',
         variant: 'destructive',
       });
       return false;
@@ -150,33 +153,10 @@ export const useFarmerAdoptions = () => {
   useEffect(() => {
     console.log('Setting up real-time subscriptions...');
     const farmersChannel = supabase
-      .channel('farmers-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'farmers'
-        },
-        (payload) => {
-          console.log('Farmers table changed:', payload);
-          queryClient.invalidateQueries({ queryKey: ['farmers-with-adoption-info'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'farmer_adoptions'
-        },
-        (payload) => {
-          console.log('Farmer adoptions table changed:', payload);
-          queryClient.invalidateQueries({ queryKey: ['farmers-with-adoption-info'] });
-          queryClient.invalidateQueries({ queryKey: ['my-adoptions', user?.id] });
-        }
-      )
-      .subscribe();
+      .channel('farmers-changes');
+    
+    // Mock channel subscription
+    farmersChannel.subscribe();
 
     return () => {
       console.log('Cleaning up real-time subscriptions...');

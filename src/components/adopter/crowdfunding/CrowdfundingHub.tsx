@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Users, Wallet, Calendar, Target, TrendingUp, Plus, Heart } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface CrowdfundingProject {
@@ -53,7 +53,7 @@ const CrowdfundingHub = () => {
         if (filterCategory !== 'all') params.append('category', filterCategory);
         if (searchTerm) params.append('search', searchTerm);
         
-        const response = await apiCall<CrowdfundingProject[]>(`/api/crowdfunding/projects?${params}`, 'GET');
+        const response = await apiCall<CrowdfundingProject[]>('GET', `/crowdfunding/projects?${params}`);
         return response;
       } catch (error) {
         return [];
@@ -67,7 +67,7 @@ const CrowdfundingHub = () => {
     queryFn: async (): Promise<CrowdfundingProject[]> => {
       if (!user) return [];
       try {
-        const response = await apiCall<CrowdfundingProject[]>('/api/crowdfunding/backed-projects', 'GET');
+        const response = await apiCall<CrowdfundingProject[]>('GET', '/crowdfunding/backed-projects');
         return response;
       } catch (error) {
         return [];
@@ -79,7 +79,7 @@ const CrowdfundingHub = () => {
   // Support project mutation
   const supportProjectMutation = useMutation({
     mutationFn: async ({ projectId, amount }: { projectId: string; amount: number }) => {
-      const response = await apiCall('/api/payments/create-payment', 'POST', {
+      const response = await apiCall('POST', '/payments/create-payment', {
         crowdfunding_project_id: projectId,
         amount,
         currency: 'KES',
@@ -88,16 +88,16 @@ const CrowdfundingHub = () => {
       return response;
     },
     onSuccess: (data) => {
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url;
+      if (data && typeof data === 'object' && 'authorization_url' in data) {
+        window.location.href = data.authorization_url as string;
       }
       queryClient.invalidateQueries({ queryKey: ['crowdfunding-projects'] });
       queryClient.invalidateQueries({ queryKey: ['backed-projects'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to process payment",
+        description: error instanceof Error ? error.message : "Failed to process payment",
         variant: "destructive",
       });
     }
@@ -106,21 +106,6 @@ const CrowdfundingHub = () => {
   const categories = [
     'all', 'Seeds & Inputs', 'Equipment', 'Infrastructure', 'Irrigation', 'Storage', 'Other'
   ];
-
-  const formatCurrency = (amount: number, currency: string = 'KES') => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount);
-  };
-
-  const calculateDaysLeft = (deadline: string) => {
-    const now = new Date();
-    const deadlineDate = new Date(deadline);
-    const diffTime = deadlineDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  };
 
   return (
     <div className="space-y-6">
@@ -244,6 +229,22 @@ const CrowdfundingHub = () => {
       </Tabs>
     </div>
   );
+};
+
+// Helper functions
+const formatCurrency = (amount: number, currency: string = 'KES') => {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: currency,
+  }).format(amount);
+};
+
+const calculateDaysLeft = (deadline: string) => {
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  const diffTime = deadlineDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
 };
 
 // Project Card Component
@@ -409,7 +410,7 @@ const CreateProjectForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiCall('/api/crowdfunding/projects', 'POST', data);
+      return await apiCall('POST', '/crowdfunding/projects', data);
     },
     onSuccess: () => {
       toast({
@@ -419,10 +420,10 @@ const CreateProjectForm = ({ onSuccess }: { onSuccess: () => void }) => {
       queryClient.invalidateQueries({ queryKey: ['crowdfunding-projects'] });
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create project",
+        description: error instanceof Error ? error.message : "Failed to create project",
         variant: "destructive",
       });
     }
@@ -524,15 +525,6 @@ const CreateProjectForm = ({ onSuccess }: { onSuccess: () => void }) => {
       </div>
     </form>
   );
-};
-
-// Helper function for calculating days left
-const calculateDaysLeft = (deadline: string) => {
-  const now = new Date();
-  const deadlineDate = new Date(deadline);
-  const diffTime = deadlineDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDays);
 };
 
 export default CrowdfundingHub;

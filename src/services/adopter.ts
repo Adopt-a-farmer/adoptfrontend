@@ -66,6 +66,97 @@ export interface AdopterAnalytics {
   }>;
 }
 
+// Mentoring Types
+export interface MentoringFarmer {
+  _id: string;
+  farmer: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+    email: string;
+    farmerProfile?: {
+      farmName: string;
+      location: string;
+      farmingType: string;
+      cropTypes: string[];
+      verificationStatus: string;
+    };
+  };
+  specialization: string;
+  status: 'active' | 'pending' | 'paused' | 'completed';
+  startDate: string;
+  goals: string[];
+  progressNotes: string;
+  lastMessage?: {
+    _id: string;
+    content: string;
+    createdAt: string;
+    sender: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+  unreadCount: number;
+  totalSessions: number;
+  nextSession?: {
+    _id: string;
+    scheduledDate: string;
+    duration: number;
+    status: string;
+  };
+  createdAt: string;
+}
+
+export interface MentoringConversation {
+  conversationId: string;
+  farmer: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+  mentorship: {
+    _id: string;
+    specialization: string;
+    status: string;
+  };
+  lastMessage?: {
+    _id: string;
+    content: string;
+    createdAt: string;
+    sender: {
+      firstName: string;
+      lastName: string;
+      avatar?: string;
+    };
+  };
+  unreadCount: number;
+  updatedAt: string;
+}
+
+export interface CreateMentorshipData {
+  farmerId: string;
+  specialization: string;
+  goals?: string[];
+  sessionFrequency?: string;
+  paymentTerms?: {
+    type: 'free' | 'paid';
+    amount?: number;
+    frequency?: string;
+  };
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export const adopterService = {
   // Get adopter dashboard data
   getDashboard: async () => {
@@ -74,7 +165,7 @@ export const adopterService = {
 
   // Get adopter's adoptions
   getAdoptions: async (params?: { status?: string; page?: number; limit?: number }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
     return await apiCall('GET', `/adopters/adoptions${queryString}`);
   },
 
@@ -93,7 +184,7 @@ export const adopterService = {
   },
 
   // Update adoption
-  updateAdoption: async (adoptionId: string, updateData: any) => {
+  updateAdoption: async (adoptionId: string, updateData: Partial<Adoption>) => {
     return await apiCall('PUT', `/adopters/adoptions/${adoptionId}`, updateData);
   },
 
@@ -113,7 +204,7 @@ export const adopterService = {
 
   // Get adoption history
   getAdoptionHistory: async (params?: { page?: number; limit?: number }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
     return await apiCall('GET', `/adopters/history${queryString}`);
   },
 
@@ -140,5 +231,39 @@ export const adopterService = {
   // Cancel adoption
   cancelAdoption: async (adoptionId: string, reason?: string) => {
     return await apiCall('POST', `/adopters/adoptions/${adoptionId}/cancel`, { reason });
+  },
+
+  // Mentoring functionality
+  // Get farmers that adopter is mentoring
+  getMentoringFarmers: async (page = 1, limit = 10): Promise<PaginatedResponse<MentoringFarmer>> => {
+    const response = await apiCall<{ mentorships: MentoringFarmer[]; pagination: { page: number; limit: number; total: number; pages: number } }>(
+      'GET',
+      `/adopters/mentoring?page=${page}&limit=${limit}`
+    );
+    return {
+      data: response.mentorships,
+      pagination: response.pagination
+    };
+  },
+
+  // Get mentoring conversations
+  getMentoringConversations: async (page = 1, limit = 20): Promise<PaginatedResponse<MentoringConversation>> => {
+    const response = await apiCall<{ conversations: MentoringConversation[]; pagination: { page: number; limit: number; total: number; pages: number } }>(
+      'GET',
+      `/adopters/mentoring/conversations?page=${page}&limit=${limit}`
+    );
+    return {
+      data: response.conversations,
+      pagination: response.pagination
+    };
+  },
+
+  // Create new mentorship
+  createMentorship: async (data: CreateMentorshipData): Promise<{ mentorship: MentoringFarmer }> => {
+    return await apiCall<{ mentorship: MentoringFarmer }>(
+      'POST',
+      '/adopters/mentoring',
+      data
+    );
   },
 };

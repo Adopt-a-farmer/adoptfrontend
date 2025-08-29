@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useAdopterDashboard } from '@/hooks/useAdopterDashboard';
 import { 
   Users, 
@@ -27,7 +27,8 @@ import {
   Search,
   TrendingUp,
   Home,
-  Eye
+  Eye,
+  HandHeart
 } from 'lucide-react';
 
 interface AdopterLayoutProps {
@@ -42,12 +43,13 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/adopter', icon: Home, badge: null },
-    { name: 'My Farmers', href: '/adopter/my-farmers', icon: Users, badge: stats?.adoptedFarmers || null },
+    { name: 'My Farmers', href: '/adopter/my-farmers', icon: Users, badge: stats?.adoptedFarmers || 0 },
     { name: 'Discover', href: '/adopter/discover', icon: Search, badge: null },
-    { name: 'Messages', href: '/adopter/messages', icon: MessageCircle, badge: stats?.unreadMessages || null },
+    { name: 'Mentoring', href: '/adopter/mentoring', icon: HandHeart, badge: null },
+    { name: 'Messages', href: '/adopter/messages', icon: MessageCircle, badge: stats?.unreadMessages || 0 },
     { name: 'Wallet', href: '/adopter/wallet', icon: Wallet, badge: null },
     { name: 'Knowledge Hub', href: '/adopter/knowledge', icon: Book, badge: null },
-    { name: 'Farm Visits', href: '/adopter/visits', icon: Calendar, badge: stats?.upcomingVisits || null },
+    { name: 'Farm Visits', href: '/adopter/visits', icon: Calendar, badge: stats?.upcomingVisits || 0 },
     { name: 'Crowdfunding', href: '/adopter/crowdfunding', icon: TrendingUp, badge: null },
   ];
 
@@ -154,7 +156,7 @@ const AdopterLayout = ({ children }: AdopterLayoutProps) => {
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.user_metadata?.avatar_url} />
+                    <AvatarImage src={(user?.user_metadata as { avatar_url?: string })?.avatar_url} />
                     <AvatarFallback>
                       {user?.email?.charAt(0).toUpperCase() || 'A'}
                     </AvatarFallback>

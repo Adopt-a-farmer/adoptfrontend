@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/mock/client';
 import NotificationChat from './NotificationChat';
 
@@ -26,7 +26,7 @@ const ChatFloatingButton: React.FC = () => {
       fetchContacts();
       subscribeToNewMessages();
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchContacts = async () => {
     if (!user) return;
@@ -53,7 +53,8 @@ const ChatFloatingButton: React.FC = () => {
       const contactMap = new Map<string, ChatContact>();
       let unreadTotal = 0;
 
-      messages?.forEach(msg => {
+      messages?.forEach(message => {
+        const msg = message as { sender_id: string; recipient_id: string; sender: unknown; recipient: unknown; content: string; read_at?: string };
         const isFromUser = msg.sender_id === user.id;
         const otherUserId = isFromUser ? msg.recipient_id : msg.sender_id;
         const otherUser = isFromUser ? msg.recipient : msg.sender;
@@ -61,8 +62,8 @@ const ChatFloatingButton: React.FC = () => {
         if (!contactMap.has(otherUserId)) {
           contactMap.set(otherUserId, {
             id: otherUserId,
-            name: (otherUser as any)?.full_name || 'Unknown',
-            role: (otherUser as any)?.role || 'user',
+            name: (otherUser as { full_name?: string })?.full_name || 'Unknown',
+            role: (otherUser as { role?: string })?.role || 'user',
             lastMessage: msg.content,
             unreadCount: 0
           });
@@ -87,20 +88,10 @@ const ChatFloatingButton: React.FC = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel(`user-messages-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `recipient_id.eq.${user.id}`
-        },
-        () => {
-          fetchContacts(); // Refresh contacts when new message arrives
-        }
-      )
-      .subscribe();
+      .channel(`user-messages-${user.id}`);
+      
+    // Mock channel subscription
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);

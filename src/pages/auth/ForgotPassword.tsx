@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
@@ -39,8 +39,8 @@ const ForgotPassword = () => {
     try {
       await forgotPassword(values.email);
       setIsSubmitted(true);
-    } catch (error: any) {
-      setErrorMessage(error.message || 'An error occurred while sending reset email');
+    } catch (error: unknown) {
+      setErrorMessage(error instanceof Error ? error.message : 'An error occurred while sending reset email');
     }
   };
 

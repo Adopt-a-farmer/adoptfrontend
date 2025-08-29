@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { BookOpen, Video, FileText, Users, Clock, Eye, Heart, Share2, Search, Filter, Play, Download } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCall } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface KnowledgeArticle {
@@ -54,7 +54,7 @@ const KnowledgeHub = () => {
         if (filterType !== 'all') params.append('type', filterType);
         if (searchTerm) params.append('search', searchTerm);
         
-        const response = await apiCall<KnowledgeArticle[]>(`/api/knowledge/articles?${params}`, 'GET');
+        const response = await apiCall<KnowledgeArticle[]>('GET', `/knowledge/articles?${params}`);
         return response;
       } catch (error) {
         // Return mock data for demonstration
@@ -66,15 +66,15 @@ const KnowledgeHub = () => {
   // Like article mutation
   const likeArticleMutation = useMutation({
     mutationFn: async (articleId: string) => {
-      return await apiCall(`/api/knowledge/articles/${articleId}/like`, 'POST');
+      return await apiCall('POST', `/knowledge/articles/${articleId}/like`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-articles'] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to like article",
+        description: error instanceof Error ? error.message : "Failed to like article",
         variant: "destructive",
       });
     }
@@ -83,7 +83,7 @@ const KnowledgeHub = () => {
   // Track view mutation
   const trackViewMutation = useMutation({
     mutationFn: async (articleId: string) => {
-      return await apiCall(`/api/knowledge/articles/${articleId}/view`, 'POST');
+      return await apiCall('POST', `/knowledge/articles/${articleId}/view`);
     },
   });
 

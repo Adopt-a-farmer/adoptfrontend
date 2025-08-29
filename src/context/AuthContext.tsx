@@ -1,8 +1,7 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+﻿import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '@/services/auth';
+import { authService, type User as AuthUser, type AuthResponse } from '@/services/auth';
 
 export interface User {
   _id: string;
@@ -17,7 +16,7 @@ export interface User {
   avatar_url?: string;
   createdAt: string;
   updatedAt: string;
-  [key: string]: any; // To accommodate any additional fields from API
+  [key: string]: unknown;
 }
 
 export interface Profile {
@@ -25,7 +24,24 @@ export interface Profile {
   full_name: string;
   avatar_url?: string;
   role: string;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+interface SignUpData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: 'farmer' | 'adopter' | 'expert';
+  phoneNumber?: string;
+}
+
+interface ProfileUpdateData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  avatar?: string;
 }
 
 type AuthContextType = {
@@ -35,13 +51,18 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (userData: any) => Promise<void>;
+  signUp: (userData: SignUpData) => Promise<void>;
   signOut: () => Promise<void>;
-  updateProfile?: (profileData: any) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
+  updateProfile?: (profileData: ProfileUpdateData) => Promise<void>;
   changePassword?: (oldPassword: string, newPassword: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Export AuthContext for external use
+export { AuthContext };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -51,33 +72,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check for existing authentication on mount (verify with backend) and sync across tabs
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          // Verify token by calling /auth/me (interceptor adds token)
           try {
             const res = await authService.getCurrentUser();
-            const userData = (res as any).data.user || (res as any).data?.data?.user || (res as any).data?.data?.user;
-            const normalizedUser = (res as any).data?.data?.user ?? (res as any).data?.user ?? userData;
-            const u = normalizedUser;
-            localStorage.setItem('user', JSON.stringify(u));
-
+            const userData = (res as unknown as { data: { user: User } }).data.user;
+            
             const profileData: Profile = {
-              _id: (u as any)._id || (u as any).id,
-              full_name: `${u.firstName} ${u.lastName}`,
-              avatar_url: (u as any).avatar_url || (u as any).avatar || undefined,
-              role: u.role,
-              ...u,
+              _id: userData._id,
+              full_name: `${userData.firstName} ${userData.lastName}`,
+              avatar_url: userData.avatar_url,
+              role: userData.role,
+              ...userData,
             };
 
-            setUser(u);
+            setUser(userData);
             setProfile(profileData);
             setIsAuthenticated(true);
-          } catch (err) {
-            // Token invalid or expired – clear
+          } catch {
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
@@ -86,13 +101,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsAuthenticated(false);
           }
         } else {
-          // No token – ensure user cleared
           localStorage.removeItem('user');
           setUser(null);
           setProfile(null);
           setIsAuthenticated(false);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error checking auth:', error);
       } finally {
         setLoading(false);
@@ -100,157 +114,103 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     checkAuth();
-
-    // Multi-tab sync for login/logout
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'token') {
-        // Re-run auth check when token changes
-        checkAuth();
-      }
-      if (e.key === 'user' && !localStorage.getItem('token')) {
-        // If user changed without a token, clear
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      console.log('Attempting to sign in user:', email);
-      
       const res = await authService.login({ email, password });
-      console.log('Sign in response:', res);
+      const response = res as unknown as { data: { token: string; refreshToken?: string; user: User } };
+      const { token, refreshToken, user: userData } = response.data;
       
-      const payload = (res as any).data?.data ?? (res as any).data;
-      if (payload && payload.token && payload.user) {
-        const { token, refreshToken, user: userData } = payload as any;
-        
-        // Store token and user data
-        localStorage.setItem('token', token);
-        if (refreshToken) {
-          localStorage.setItem('refreshToken', refreshToken);
-        }
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        // Create profile from user data
-        const profileData: Profile = {
-          _id: (userData as any)._id || (userData as any).id,
-          full_name: `${userData.firstName} ${userData.lastName}`,
-          avatar_url: (userData as any).avatar_url || undefined,
-          role: userData.role,
-          ...userData
-        };
-        
-        // Update state
-        setUser(userData);
-        setProfile(profileData);
-        setIsAuthenticated(true);
-        
-        console.log('Sign in successful, user authenticated:', userData);
-        
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-      } else {
-        console.error('Invalid response structure:', res);
-        throw new Error('Invalid response from server');
+      localStorage.setItem('token', token);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
       }
-    } catch (error: any) {
-      console.error('Sign in failed:', error);
+      localStorage.setItem('user', JSON.stringify(userData));
       
-      // Clear any existing auth data
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
+      const profileData: Profile = {
+        _id: userData._id,
+        full_name: `${userData.firstName} ${userData.lastName}`,
+        avatar_url: userData.avatar_url,
+        role: userData.role,
+        ...userData
+      };
+      
+      setUser(userData);
+      setProfile(profileData);
+      setIsAuthenticated(true);
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      
+      if (userData.role === 'farmer') {
+        navigate('/farmer');
+      } else if (userData.role === 'adopter') {
+        navigate('/adopter');
+      } else if (userData.role === 'expert') {
+        navigate('/expert');
+      } else if (userData.role === 'admin') {
+        navigate('/admin/dashboard');
+      }
+    } catch (error: unknown) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
       setUser(null);
       setProfile(null);
       setIsAuthenticated(false);
       
-      let errorMessage = 'Login failed. Please try again.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       toast({
         title: "Login failed",
-        description: errorMessage,
+        description: "Please check your credentials and try again.",
         variant: "destructive",
       });
       
-      // Re-throw the error to be handled by the component
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const signUp = async (userData: any) => {
+  const signUp = async (userData: SignUpData) => {
     try {
       setLoading(true);
-      console.log('Attempting to sign up user:', userData.email);
-      
       const res = await authService.signup(userData);
-      console.log('Sign up response:', res);
+      const response = res as unknown as { data: { token: string; refreshToken?: string; user: User } };
+      const { token, refreshToken, user: newUser } = response.data;
       
-      const payload = (res as any).data?.data ?? (res as any).data;
-      if (payload && payload.token && payload.user) {
-        const { token, refreshToken, user: newUser } = payload as any;
-        
-        // Store token and user data
-        localStorage.setItem('token', token);
-        if (refreshToken) {
-          localStorage.setItem('refreshToken', refreshToken);
-        }
-        localStorage.setItem('user', JSON.stringify(newUser));
-        
-        // Create profile from user data
-        const profileData: Profile = {
-          _id: (newUser as any)._id || (newUser as any).id,
-          full_name: `${newUser.firstName} ${newUser.lastName}`,
-          avatar_url: (newUser as any).avatar_url || undefined,
-          role: newUser.role,
-          ...newUser
-        };
-        
-        // Update state
-        setUser(newUser);
-        setProfile(profileData);
-        setIsAuthenticated(true);
-        
-        console.log('Sign up successful, user authenticated:', newUser);
-        
-        toast({
-          title: "Registration successful",
-          description: "Welcome to our platform!",
-        });
-      } else {
-        console.error('Invalid signup response structure:', res);
-        throw new Error('Invalid response from server');
+      localStorage.setItem('token', token);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
       }
-    } catch (error: any) {
-      console.error('Sign up failed:', error);
+      localStorage.setItem('user', JSON.stringify(newUser));
       
-      let errorMessage = 'Registration failed. Please try again.';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      const profileData: Profile = {
+        _id: newUser._id,
+        full_name: `${newUser.firstName} ${newUser.lastName}`,
+        avatar_url: newUser.avatar_url,
+        role: newUser.role,
+        ...newUser
+      };
+      
+      setUser(newUser);
+      setProfile(profileData);
+      setIsAuthenticated(true);
       
       toast({
+        title: "Registration successful",
+        description: "Welcome to our platform!",
+      });
+    } catch (error: unknown) {
+      toast({
         title: "Registration failed",
-        description: errorMessage,
+        description: "Please try again.",
         variant: "destructive",
       });
       
-      // Re-throw the error to be handled by the component
       throw error;
     } finally {
       setLoading(false);
@@ -259,14 +219,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      console.log('Signing out user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
       
-      // Clear storage
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
-      
-      // Update state
       setUser(null);
       setProfile(null);
       setIsAuthenticated(false);
@@ -276,42 +232,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error signing out:', error);
       toast({
         title: "Error signing out",
-        description: error.message,
+        description: "An error occurred while signing out",
         variant: "destructive",
       });
     }
   };
 
-  const updateProfile = async (profileData: any) => {
+  const updateProfile = async (profileData: ProfileUpdateData) => {
     try {
       setLoading(true);
-      // Normalize payload for backend: phoneNumber -> phone
-      const payload: any = { ...profileData };
-      if (payload.phoneNumber !== undefined) {
-        payload.phone = payload.phoneNumber;
-        delete payload.phoneNumber;
-      }
-      // Call backend to update user
-      const res = await authService.updateProfile(payload);
-      const updatedUser = (res as any).data?.user || (res as any).data?.data?.user;
+      const res = await authService.updateProfile(profileData);
+      const updatedUser = (res as unknown as { data: { user: User } }).data.user;
 
-      if (!updatedUser) throw new Error('Invalid update response');
-
-      // Update state and storage
       setUser(updatedUser);
       setProfile(prev => prev ? { ...prev, full_name: `${updatedUser.firstName} ${updatedUser.lastName}` } : prev);
       localStorage.setItem('user', JSON.stringify(updatedUser));
 
       toast({ title: 'Profile updated successfully' });
-    } catch (error: any) {
-      console.error('Profile update failed:', error);
+    } catch (error: unknown) {
       toast({
         title: 'Profile update failed',
-        description: error.response?.data?.message || error.message,
+        description: 'Update failed',
         variant: 'destructive',
       });
       throw error;
@@ -322,20 +267,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const changePassword = async (oldPassword: string, newPassword: string) => {
     try {
-      // Implement password change logic here
-      console.log('Change password called');
-      
       toast({
         title: "Password changed successfully",
       });
-    } catch (error: any) {
-      console.error('Password change failed:', error);
+    } catch (error: unknown) {
       toast({
         title: "Password change failed",
-        description: error.message,
+        description: 'Password change failed',
         variant: "destructive",
       });
       throw error;
+    }
+  };
+
+  const forgotPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      await authService.forgotPassword(email);
+      toast({
+        title: "Reset email sent",
+        description: "Please check your email for password reset instructions.",
+      });
+    } catch (error: unknown) {
+      toast({
+        title: "Failed to send reset email",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      setLoading(true);
+      await authService.resetPassword(token, password);
+      toast({
+        title: "Password reset successful",
+        description: "You can now sign in with your new password.",
+      });
+    } catch (error: unknown) {
+      toast({
+        title: "Failed to reset password",
+        description: "Please try again or request a new reset link.",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -350,6 +331,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signUp,
     signOut,
+    forgotPassword,
+    resetPassword,
     updateProfile,
     changePassword,
   };
@@ -361,10 +344,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// useAuth hook is now exported from @/hooks/useAuth

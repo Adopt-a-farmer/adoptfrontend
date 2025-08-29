@@ -22,7 +22,7 @@ const FarmerDetail = () => {
       if (!id) return;
       
       try {
-        const data = await apiCall<Farmer>(`/api/farmers/${id}`, 'GET');
+        const data = await apiCall<Farmer>('GET', `/farmers/${id}`);
         setFarmer(data);
       } catch (error) {
         console.error('Error in fetchFarmer:', error);

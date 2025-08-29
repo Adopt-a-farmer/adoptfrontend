@@ -32,8 +32,8 @@ const FeaturedFarmersCarousel = ({ farmers }: FeaturedFarmersCarouselProps) => {
           <div className="space-y-4">
             {farmerRows.map((row, index) => (
               <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                {row.map((farmer) => (
-                  <div key={farmer.id} className="w-full">
+                {row.map((farmer, farmerIndex) => (
+                  <div key={`${farmer.id || farmer._id}-${farmerIndex}`} className="w-full">
                     <FarmerCard farmer={farmer} showFeaturedBadge size="regular" />
                   </div>
                 ))}

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
@@ -74,18 +74,19 @@ const Login = () => {
         if (redirectTo) {
           navigate(redirectTo);
         } else if (userData.role === 'farmer') {
-          navigate('/farmer/dashboard');
+          navigate('/farmer');
         } else if (userData.role === 'adopter') {
-          navigate('/adopter/dashboard');
+          navigate('/adopter');
         } else if (userData.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/');
         }
       }
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Login error:', error);
-      setErrorMessage(error.message || 'An error occurred during login');
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during login';
+      setErrorMessage(errorMessage);
     }
   };
 
