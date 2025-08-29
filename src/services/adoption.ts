@@ -75,32 +75,7 @@ export const adoptionService = {
   // Create a new adoption
   async createAdoption(data: { farmerId: string; monthlyContribution: number; currency: string; message?: string }): Promise<AdoptionCreateResponse> {
     try {
-      // First, initialize payment with Paystack
-      const paymentData = {
-        amount: data.monthlyContribution,
-        currency: data.currency,
-        paymentType: 'adoption',
-        paymentMethod: 'card',
-        description: `Monthly support for farmer adoption`,
-        metadata: {
-          farmerId: data.farmerId,
-          adoptionType: 'monthly_support',
-          purpose: 'farmer_adoption'
-        }
-      };
-
-      console.log('Payment data being sent:', paymentData);
-
-      const paymentResponse = await apiCall('POST', '/payments/initialize', paymentData) as PaymentResponse;
-      
-      if (!paymentResponse.success) {
-        return {
-          success: false,
-          message: paymentResponse.message || 'Failed to initialize payment. Please try again.'
-        };
-      }
-
-      // Create adoption with payment reference
+      // First, create the adoption record
       const adoptionData = {
         farmerId: data.farmerId,
         adoptionType: 'monthly_support',
@@ -113,25 +88,54 @@ export const adoptionService = {
           type: 'monthly',
           amount: data.monthlyContribution,
           currency: data.currency
-        },
-        paymentReference: paymentResponse.data?.reference
+        }
       };
 
+      console.log('Creating adoption with data:', adoptionData);
+      
       const adoptionResponse = await apiCall('POST', '/adopters/adopt-farmer', adoptionData) as AdoptionResponse;
       
-      if (adoptionResponse.success) {
-        return {
-          success: true,
-          data: adoptionResponse.data,
-          paymentUrl: paymentResponse.data?.authorization_url,
-          message: 'Adoption created successfully. Complete payment to activate.'
-        };
-      } else {
+      if (!adoptionResponse.success) {
         return {
           success: false,
           message: adoptionResponse.message || 'Failed to create adoption.'
         };
       }
+
+      // Then initialize payment with adoption ID
+      const paymentData = {
+        amount: data.monthlyContribution,
+        currency: data.currency,
+        paymentType: 'adoption',
+        paymentMethod: 'card',
+        description: `Monthly support for farmer adoption`,
+        metadata: {
+          farmerId: data.farmerId,
+          adoptionId: adoptionResponse.data?._id,
+          adoptionType: 'monthly_support',
+          purpose: 'farmer_adoption'
+        }
+      };
+
+      console.log('Initializing payment with data:', paymentData);
+
+      const paymentResponse = await apiCall('POST', '/payments/initialize', paymentData) as PaymentResponse;
+      
+      if (!paymentResponse.success) {
+        // If payment fails, we should probably clean up the adoption
+        console.error('Payment initialization failed:', paymentResponse.message);
+        return {
+          success: false,
+          message: paymentResponse.message || 'Failed to initialize payment. Please try again.'
+        };
+      }
+
+      return {
+        success: true,
+        data: adoptionResponse.data,
+        paymentUrl: paymentResponse.data?.authorization_url,
+        message: 'Adoption created successfully. Complete payment to activate.'
+      };
     } catch (error: unknown) {
       console.error('Failed to create adoption:', error);
       const err = error as { response?: { status?: number; data?: { message?: string } } };
