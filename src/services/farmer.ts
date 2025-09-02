@@ -264,6 +264,9 @@ export interface FarmerProfile {
   createdAt: string;
   updatedAt: string;
   isActive?: boolean;
+  isAdopted?: boolean;
+  isAdoptedByCurrentUser?: boolean;
+  activeAdoptionsCount?: number;
 }
 
 export interface FarmerAnalytics {

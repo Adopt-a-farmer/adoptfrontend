@@ -86,8 +86,20 @@ const WalletWithdrawals = () => {
   const { data: transactions = [] } = useQuery({
     queryKey: ['wallet-transactions', user?.id],
     queryFn: async (): Promise<WalletTransaction[]> => {
-      const response = await farmerService.getWalletTransactions();
-      return response.transactions as unknown as WalletTransaction[];
+      try {
+        const response = await farmerService.getWalletTransactions();
+        // Handle both possible response structures
+        if (response.transactions) {
+          return response.transactions as unknown as WalletTransaction[];
+        } else if (Array.isArray(response)) {
+          return response as unknown as WalletTransaction[];
+        } else {
+          return [];
+        }
+      } catch (error) {
+        console.error('Failed to fetch wallet transactions:', error);
+        return [];
+      }
     },
     enabled: !!user
   });

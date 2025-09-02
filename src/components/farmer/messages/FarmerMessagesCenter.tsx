@@ -9,7 +9,7 @@ import { Send, MessageCircle, User, Heart, Phone, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adopterMessagingService, AdopterFarmerConversation } from '@/services/adopterMessaging';
+import { farmerMessagingService, FarmerAdopterConversation } from '@/services/adopterMessaging';
 import { messagingService } from '@/services/messaging';
 import { format } from 'date-fns';
 
@@ -40,18 +40,18 @@ interface Message {
   createdAt: string;
 }
 
-const MessagesCenter = () => {
+const FarmerMessagesCenter = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [selectedConversation, setSelectedConversation] = useState<AdopterFarmerConversation | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<FarmerAdopterConversation | null>(null);
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Get adopter-farmer conversations
+  // Get farmer-adopter conversations
   const { data: conversationsData, isLoading: conversationsLoading } = useQuery({
-    queryKey: ['adopter-farmer-conversations'],
-    queryFn: () => adopterMessagingService.getAdopterFarmerConversations(),
+    queryKey: ['farmer-adopter-conversations'],
+    queryFn: () => farmerMessagingService.getFarmerAdopterConversations(),
   });
 
   const conversations = conversationsData?.data || [];
@@ -75,8 +75,8 @@ const MessagesCenter = () => {
     mutationFn: async (messageData: { text: string }) => {
       if (!selectedConversation) throw new Error('No conversation selected');
       
-      return adopterMessagingService.sendMessageToFarmer({
-        recipient: selectedConversation.farmer._id,
+      return farmerMessagingService.sendMessageToAdopter({
+        recipient: selectedConversation.adopter._id,
         messageType: 'text',
         content: { text: messageData.text },
         adoption: selectedConversation.adoption._id
@@ -84,7 +84,7 @@ const MessagesCenter = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversation-messages', selectedConversation?.conversationId] });
-      queryClient.invalidateQueries({ queryKey: ['adopter-farmer-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['farmer-adopter-conversations'] });
       setMessageText('');
       setIsSending(false);
     },
@@ -152,7 +152,7 @@ const MessagesCenter = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-        <p className="text-gray-600 mt-1">Chat with your adopted farmers</p>
+        <p className="text-gray-600 mt-1">Chat with your adopters</p>
       </div>
 
       <Card className="h-[600px]">
@@ -160,15 +160,15 @@ const MessagesCenter = () => {
           {/* Conversations List */}
           <div className="w-1/3 border-r bg-gray-50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Adopted Farmers</CardTitle>
+              <CardTitle className="text-lg">My Adopters</CardTitle>
             </CardHeader>
             <ScrollArea className="h-[500px]">
               <div className="space-y-2 p-4 pt-0">
                 {conversations.length === 0 ? (
                   <div className="text-center py-8">
                     <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 text-sm">No adopted farmers yet</p>
-                    <p className="text-gray-400 text-xs mt-1">Adopt a farmer to start messaging</p>
+                    <p className="text-gray-500 text-sm">No adopters yet</p>
+                    <p className="text-gray-400 text-xs mt-1">Share your profile to get adopted</p>
                   </div>
                 ) : (
                   conversations.map((conversation) => (
@@ -183,15 +183,15 @@ const MessagesCenter = () => {
                     >
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={conversation.farmer.avatar} />
+                          <AvatarImage src={conversation.adopter.avatar} />
                           <AvatarFallback>
-                            {conversation.farmer.firstName[0]}{conversation.farmer.lastName[0]}
+                            {conversation.adopter.firstName[0]}{conversation.adopter.lastName[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="font-medium text-sm truncate">
-                              {conversation.farmer.firstName} {conversation.farmer.lastName}
+                              {conversation.adopter.firstName} {conversation.adopter.lastName}
                             </p>
                             {conversation.unreadCount > 0 && (
                               <Badge variant="destructive" className="text-xs">
@@ -236,14 +236,14 @@ const MessagesCenter = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={selectedConversation.farmer.avatar} />
+                        <AvatarImage src={selectedConversation.adopter.avatar} />
                         <AvatarFallback>
-                          {selectedConversation.farmer.firstName[0]}{selectedConversation.farmer.lastName[0]}
+                          {selectedConversation.adopter.firstName[0]}{selectedConversation.adopter.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <h3 className="font-semibold">
-                          {selectedConversation.farmer.firstName} {selectedConversation.farmer.lastName}
+                          {selectedConversation.adopter.firstName} {selectedConversation.adopter.lastName}
                         </h3>
                         <p className="text-sm text-gray-500">
                           Monthly Support: KES {selectedConversation.adoption.monthlyContribution}
@@ -287,13 +287,13 @@ const MessagesCenter = () => {
                           <div
                             className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                               message.sender?._id === user?._id
-                                ? 'bg-blue-500 text-white'
+                                ? 'bg-green-500 text-white'
                                 : 'bg-gray-200 text-gray-900'
                             }`}
                           >
                             <p className="text-sm">{message.content.text}</p>
                             <p className={`text-xs mt-1 ${
-                              message.sender?._id === user?._id ? 'text-blue-100' : 'text-gray-500'
+                              message.sender?._id === user?._id ? 'text-green-100' : 'text-gray-500'
                             }`}>
                               {message.createdAt ? (() => {
                                 try {
@@ -335,8 +335,8 @@ const MessagesCenter = () => {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a farmer to chat</h3>
-                  <p className="text-gray-500">Choose a farmer from your adopted list to start messaging</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select an adopter to chat</h3>
+                  <p className="text-gray-500">Choose an adopter from your list to start messaging</p>
                 </div>
               </div>
             )}
@@ -347,4 +347,4 @@ const MessagesCenter = () => {
   );
 };
 
-export default MessagesCenter;
+export default FarmerMessagesCenter;

@@ -13,7 +13,7 @@ export interface User {
   isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
-  profile?: any;
+  profile?: Record<string, unknown>;
 }
 
 export interface LoginCredentials {
@@ -28,6 +28,33 @@ export interface RegisterData {
   password: string;
   phoneNumber?: string;
   role: 'farmer' | 'adopter' | 'expert' | 'admin' | 'investor' | 'buyer' | 'logistics_partner';
+  farmerProfile?: {
+    farmName: string;
+    description: string;
+    location: {
+      county: string;
+      subCounty: string;
+      village?: string;
+    };
+    farmSize: {
+      value: number;
+      unit: 'acres' | 'hectares';
+    };
+    establishedYear?: number;
+    farmingType: string[];
+    cropTypes?: string[];
+    farmingMethods?: string[];
+    contactInfo?: {
+      phone: string;
+      email: string;
+      website?: string;
+    };
+    socialMedia?: {
+      facebook?: string;
+      twitter?: string;
+      instagram?: string;
+    };
+  };
 }
 
 export interface AuthResponse {

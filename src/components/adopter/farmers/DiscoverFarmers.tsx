@@ -11,12 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageLoader } from '@/components/ui/loading';
-import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar } from 'lucide-react';
+import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar, MessageCircle, Leaf } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { farmerService, FarmerProfile } from '@/services/farmer';
 import { adoptionService, Adoption } from '@/services/adoption';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 // Component starts here
 const DiscoverFarmers = () => {
@@ -102,6 +103,13 @@ const DiscoverFarmers = () => {
       return matchesSearch;
     });
   }, [farmers, searchTerm]);
+
+  // Separate adopted and non-adopted farmers based on current user
+  const { availableFarmers, adoptedFarmers } = useMemo(() => {
+    const available = filteredFarmers.filter(farmer => !farmer.isAdoptedByCurrentUser);
+    const adopted = filteredFarmers.filter(farmer => farmer.isAdoptedByCurrentUser);
+    return { availableFarmers: available, adoptedFarmers: adopted };
+  }, [filteredFarmers]);
 
   const handleAdoptFarmer = async (farmerId: string, contributionAmount: number, currency: string, message?: string) => {
     if (!user) {
@@ -243,25 +251,70 @@ const DiscoverFarmers = () => {
       </Card>
 
       {/* Results Count */}
-      <div>
-        <p className="text-gray-600">
-          Showing {filteredFarmers.length} of {total} farmer{total !== 1 ? 's' : ''} available for adoption
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-gray-600">
+            Showing {availableFarmers.length} available farmer{availableFarmers.length !== 1 ? 's' : ''} for adoption
+            {adoptedFarmers.length > 0 && (
+              <span className="text-gray-500"> • {adoptedFarmers.length} already adopted</span>
+            )}
+          </p>
+        </div>
       </div>
 
-      {/* Farmers Grid */}
-      {filteredFarmers.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFarmers.map((farmer) => (
-            <FarmerCard 
-              key={farmer._id} 
-              farmer={farmer} 
-              isAdopted={myAdoptions.includes(farmer._id)}
-              onAdopt={handleAdoptFarmer}
-            />
-          ))}
+      {/* Available Farmers Section */}
+      {availableFarmers.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-900">Available Farmers</h2>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              {availableFarmers.length} Available
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {availableFarmers.map((farmer) => (
+              <FarmerCard 
+                key={farmer._id} 
+                farmer={farmer} 
+                isAdopted={false}
+                onAdopt={handleAdoptFarmer}
+              />
+            ))}
+          </div>
         </div>
-      ) : (
+      )}
+
+      {/* Adopted Farmers Section */}
+      {adoptedFarmers.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-600">Already Adopted</h2>
+            <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+              {adoptedFarmers.length} Adopted
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60">
+            {adoptedFarmers.map((farmer) => (
+              <FarmerCard 
+                key={farmer._id} 
+                farmer={farmer} 
+                isAdopted={true}
+                onAdopt={handleAdoptFarmer}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No farmers found */}
+      {availableFarmers.length === 0 && adoptedFarmers.length === 0 && (
+        <div className="text-center py-12">
+          <Leaf className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No farmers found</h3>
+          <p className="text-gray-500">Try adjusting your search criteria or check back later for new farmers.</p>
+        </div>
+      )}
+      {availableFarmers.length === 0 && adoptedFarmers.length === 0 && (
         <div className="text-center py-12">
           <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No farmers found</h3>
@@ -351,7 +404,7 @@ const FarmerCard = ({
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className={`hover:shadow-lg transition-shadow ${isAdopted ? 'opacity-75 border-gray-300' : ''}`}>
       <div className="relative h-48">
         <img 
           src={farmer.media?.profileImage?.url || farmer.farmImages?.[0] || '/placeholder.svg'} 
@@ -359,6 +412,14 @@ const FarmerCard = ({
           className="w-full h-full object-cover rounded-t-lg"
         />
         <div className="absolute top-4 right-4 flex gap-2">
+          {isAdopted && (
+            <Badge 
+              className="text-white bg-orange-600"
+            >
+              <Heart className="h-3 w-3 mr-1" />
+              Adopted
+            </Badge>
+          )}
           <Badge 
             className="text-white bg-green-600"
           >
@@ -371,8 +432,8 @@ const FarmerCard = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{farmer.farmName}</CardTitle>
           {isAdopted && (
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              <Heart className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+              <Heart className="h-3 w-3 mr-1 fill-current" />
               Adopted
             </Badge>
           )}
@@ -442,15 +503,27 @@ const FarmerCard = ({
         {/* Action Buttons */}
         <div className="flex space-x-2 pt-2">
           {isAdopted ? (
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="flex-1 bg-green-50 text-green-700 border-green-200"
-              disabled
-            >
-              <Heart className="mr-2 h-4 w-4" />
-              Already Adopted
-            </Button>
+            <>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="flex-1 bg-orange-50 text-orange-700 border-orange-200 cursor-not-allowed"
+                disabled
+              >
+                <Heart className="mr-2 h-4 w-4 fill-current" />
+                Already Adopted
+              </Button>
+              <Link to={`/adopter/messages?farmer=${farmer._id}`}>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Message
+                </Button>
+              </Link>
+            </>
           ) : (
             <Dialog open={showAdoptModal} onOpenChange={setShowAdoptModal}>
               <DialogTrigger asChild>

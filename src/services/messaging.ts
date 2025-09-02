@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { apiCall } from './api';
 
 export interface SocketMessage {
   _id: string;
@@ -196,6 +197,25 @@ class MessagingService {
   get socketId() {
     return this.socket?.id;
   }
+
+  // API methods for getting conversation messages
+  async getConversationMessages(conversationId: string, page = 1, limit = 50) {
+    try {
+      return await apiCall('GET', `/messages/conversation/${conversationId}?page=${page}&limit=${limit}`);
+    } catch (error) {
+      console.error('Failed to fetch conversation messages:', error);
+      throw error;
+    }
+  }
+
+  async markConversationAsRead(conversationId: string) {
+    try {
+      return await apiCall('PUT', `/messages/conversation/${conversationId}/mark-read`);
+    } catch (error) {
+      console.error('Failed to mark conversation as read:', error);
+      throw error;
+    }
+  }
 }
 
 export const messagingService = new MessagingService();
@@ -217,6 +237,8 @@ export const useMessaging = () => {
     onTyping: messagingService.onTyping.bind(messagingService),
     onMessageStatus: messagingService.onMessageStatus.bind(messagingService),
     onConnectionChange: messagingService.onConnectionChange.bind(messagingService),
+    getConversationMessages: messagingService.getConversationMessages.bind(messagingService),
+    markConversationAsRead: messagingService.markConversationAsRead.bind(messagingService),
     connected: messagingService.connected,
     socketId: messagingService.socketId
   };

@@ -3,22 +3,52 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { MapPin, Calendar, Users, Wallet, MessageCircle, Edit, Loader2 } from 'lucide-react';
-import { useAdopterDashboard } from '@/hooks/useAdopterDashboard';
-import { formatDistanceToNow, format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { adoptionService, Adoption } from '@/services/adoption';
+import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 const MyFarmers = () => {
-  const { adoptedFarmers, stats, updateContribution, isUpdatingContribution, isLoading } = useAdopterDashboard();
   const [editingContribution, setEditingContribution] = useState<{ id: string; amount: number } | null>(null);
+  const [isUpdatingContribution, setIsUpdatingContribution] = useState(false);
 
-  const handleUpdateContribution = (adoptionId: string, newAmount: number) => {
-    updateContribution({ adoptionId, newAmount });
-    setEditingContribution(null);
+  // Fetch adopted farmers using the actual API
+  const { data: adoptedFarmersResponse, isLoading } = useQuery({
+    queryKey: ['adopted-farmers'],
+    queryFn: () => adoptionService.getMyAdoptions(),
+  });
+
+  // Handle the API response structure - ensure we have an array
+  const adoptions = Array.isArray(adoptedFarmersResponse?.data) 
+    ? adoptedFarmersResponse.data as Adoption[]
+    : [];
+
+  // Calculate stats from the actual data
+  const stats = {
+    adoptedFarmers: adoptions.length,
+    totalContributions: adoptions.reduce((sum: number, adoption: Adoption) => 
+      sum + (adoption.monthlyContribution || 0), 0),
+    averageContribution: adoptions.length > 0 
+      ? adoptions.reduce((sum: number, adoption: Adoption) => 
+          sum + (adoption.monthlyContribution || 0), 0) / adoptions.length
+      : 0
+  };
+
+  const handleUpdateContribution = async (adoptionId: string, newAmount: number) => {
+    setIsUpdatingContribution(true);
+    try {
+      // TODO: Implement contribution update API call
+      console.log('Update contribution:', adoptionId, newAmount);
+      setEditingContribution(null);
+    } catch (error) {
+      console.error('Failed to update contribution:', error);
+    } finally {
+      setIsUpdatingContribution(false);
+    }
   };
 
   if (isLoading) {
@@ -101,53 +131,43 @@ const MyFarmers = () => {
       </div>
 
       {/* Farmers List */}
-      {adoptedFarmers && adoptedFarmers.length > 0 ? (
+      {adoptions && adoptions.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {adoptedFarmers.map((farmer) => (
-            <Card key={farmer.id} className="hover:shadow-lg transition-shadow">
+          {adoptions.map((adoption) => (
+            <Card key={adoption._id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <img 
-                      src={farmer.farmer_image} 
-                      alt={farmer.farmer_name}
+                      src={adoption.farmer?.avatar || '/placeholder.svg'} 
+                      alt={`${adoption.farmer?.firstName} ${adoption.farmer?.lastName}`}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     <div>
-                      <CardTitle className="text-lg">{farmer.farmer_name}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {adoption.farmer?.firstName} {adoption.farmer?.lastName}
+                      </CardTitle>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
                         <MapPin className="h-4 w-4 mr-1" />
-                        {farmer.farmer_location}
+                        Location Available
                       </div>
                     </div>
                   </div>
-                  <Badge className="bg-farmer-primary capitalize">{farmer.status}</Badge>
+                  <Badge className="bg-farmer-primary capitalize">{adoption.status}</Badge>
                 </div>
               </CardHeader>
               
               <CardContent className="space-y-4">
-                {/* Crops */}
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-2">Crops</p>
-                  <div className="flex flex-wrap gap-1">
-                    {farmer.farmer_crops.map((crop, index) => (
-                      <Badge key={index} variant="outline" className="bg-farmer-secondary/10 text-farmer-primary border-farmer-secondary">
-                        {crop}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Adoption Info */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Total Contributed</p>
-                    <p className="font-semibold text-gray-900">KES {farmer.total_contributed.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">KES {adoption.totalContributed?.toLocaleString() || 0}</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-600">Monthly Support</p>
-                      <p className="font-semibold text-gray-900">KES {farmer.monthly_contribution.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900">KES {adoption.monthlyContribution?.toLocaleString() || 0}</p>
                     </div>
                     <Dialog>
                       <DialogTrigger asChild>
@@ -165,9 +185,9 @@ const MyFarmers = () => {
                             <Input
                               id="amount"
                               type="number"
-                              defaultValue={farmer.monthly_contribution}
+                              defaultValue={adoption.monthlyContribution || 0}
                               onChange={(e) => setEditingContribution({ 
-                                id: farmer.id, 
+                                id: adoption._id, 
                                 amount: parseInt(e.target.value) || 0 
                               })}
                             />
@@ -191,18 +211,15 @@ const MyFarmers = () => {
                 <div className="text-sm">
                   <p className="text-gray-600">Adopted on</p>
                   <p className="font-semibold text-gray-900">
-                    {format(new Date(farmer.adoption_date), 'PPP')}
+                    {format(new Date(adoption.startDate || adoption.createdAt), 'PPP')}
                   </p>
                 </div>
 
-                {/* Last Update */}
-                {farmer.last_update && (
+                {/* Message */}
+                {adoption.message && (
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Latest Update</p>
-                    <p className="text-sm text-gray-800">{farmer.last_update.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatDistanceToNow(new Date(farmer.last_update.created_at), { addSuffix: true })}
-                    </p>
+                    <p className="text-sm font-medium text-gray-600 mb-1">Message</p>
+                    <p className="text-sm text-gray-800">{adoption.message}</p>
                   </div>
                 )}
 
@@ -211,10 +228,15 @@ const MyFarmers = () => {
                   <Button size="sm" className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90">
                     View Details
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1 border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Message
-                  </Button>
+                  <Link 
+                    to={`/adopter/chat?farmer=${adoption.farmer._id}`}
+                    className="flex-1"
+                  >
+                    <Button size="sm" variant="outline" className="w-full border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Message
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

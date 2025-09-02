@@ -59,10 +59,9 @@ const MessagesCenter = () => {
   // Get messages for selected conversation
   const { data: messagesData, isLoading: messagesLoading } = useQuery({
     queryKey: ['conversation-messages', selectedConversation?.conversationId],
-    queryFn: async () => {
-      if (!selectedConversation) return { success: false, data: [] };
-      return await messagingService.getConversationMessages(selectedConversation.conversationId) as { success: boolean; data: Message[] };
-    },
+    queryFn: () => selectedConversation 
+      ? messagingService.getConversationMessages(selectedConversation.conversationId)
+      : Promise.resolve({ success: false, data: [] }),
     enabled: !!selectedConversation,
   });
 
@@ -277,32 +276,25 @@ const MessagesCenter = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {messages.filter(message => message && message._id && message.sender && message.sender._id).map((message) => (
+                      {messages.map((message) => (
                         <div
                           key={message._id}
                           className={`flex ${
-                            message.sender?._id === user?._id ? 'justify-end' : 'justify-start'
+                            message.sender._id === user?.id ? 'justify-end' : 'justify-start'
                           }`}
                         >
                           <div
                             className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.sender?._id === user?._id
+                              message.sender._id === user?.id
                                 ? 'bg-blue-500 text-white'
                                 : 'bg-gray-200 text-gray-900'
                             }`}
                           >
                             <p className="text-sm">{message.content.text}</p>
                             <p className={`text-xs mt-1 ${
-                              message.sender?._id === user?._id ? 'text-blue-100' : 'text-gray-500'
+                              message.sender._id === user?.id ? 'text-blue-100' : 'text-gray-500'
                             }`}>
-                              {message.createdAt ? (() => {
-                                try {
-                                  const date = new Date(message.createdAt);
-                                  return isNaN(date.getTime()) ? '' : format(date, 'HH:mm');
-                                } catch (error) {
-                                  return '';
-                                }
-                              })() : ''}
+                              {format(new Date(message.createdAt), 'HH:mm')}
                             </p>
                           </div>
                         </div>
