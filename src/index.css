@@ -103,7 +103,7 @@
 
 @layer components {
   .hero-section {
-    @apply relative bg-gradient-to-b from-farmer-primary to-farmer-secondary text-white py-20 overflow-hidden;
+    @apply relative bg-gradient-to-br from-fresh-green via-farmer-primary to-farmer-secondary text-white py-20 overflow-hidden;
   }
 
   .hero-section::after {
@@ -112,11 +112,11 @@
   }
 
   .feature-card {
-    @apply bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100;
+    @apply bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 transform hover:-translate-y-1;
   }
 
   .farmer-card {
-    @apply bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300;
+    @apply bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1;
   }
 
   .farmer-card-image {
@@ -124,30 +124,55 @@
   }
 
   .auth-card {
-    @apply max-w-md w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden;
+    @apply max-w-md w-full mx-auto bg-white rounded-2xl shadow-lg overflow-hidden;
   }
 
   .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-farmer-primary;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-fresh-green focus:border-fresh-green transition-colors duration-300;
   }
 
   .btn-primary {
-    @apply bg-farmer-primary text-white px-6 py-3 rounded-md hover:bg-opacity-90 transition-all duration-300 font-medium;
+    @apply bg-fresh-green text-white px-8 py-4 rounded-full hover:bg-farmer-secondary transition-all duration-300 font-semibold shadow-lg transform hover:scale-105;
   }
 
   .btn-secondary {
-    @apply bg-farmer-secondary text-farmer-primary px-6 py-3 rounded-md hover:bg-opacity-90 transition-all duration-300 font-medium;
+    @apply bg-farmer-secondary text-white px-8 py-4 rounded-full hover:bg-fresh-green transition-all duration-300 font-semibold shadow-lg transform hover:scale-105;
   }
 
   .btn-accent {
-    @apply bg-farmer-accent text-white px-6 py-3 rounded-md hover:bg-opacity-90 transition-all duration-300 font-medium;
+    @apply bg-fresh-orange text-white px-8 py-4 rounded-full hover:bg-orange-600 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105;
   }
 
   .btn-outline {
-    @apply border-2 border-farmer-primary text-farmer-primary px-6 py-3 rounded-md hover:bg-farmer-primary hover:text-white transition-all duration-300 font-medium;
+    @apply border-2 border-fresh-green text-fresh-green px-8 py-4 rounded-full hover:bg-fresh-green hover:text-white transition-all duration-300 font-semibold;
   }
 
   .impact-counter {
-    @apply text-4xl font-bold text-farmer-primary mb-2;
+    @apply text-4xl font-bold text-fresh-green mb-2;
+  }
+
+  /* Fresh theme specific utility classes */
+  .card-hover {
+    @apply transform hover:-translate-y-2 hover:shadow-xl transition-all duration-300;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-fresh-green to-farmer-secondary bg-clip-text text-transparent;
+  }
+
+  .fresh-button {
+    @apply bg-gradient-to-r from-fresh-green to-farmer-secondary text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300;
+  }
+
+  .fresh-card {
+    @apply bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100;
+  }
+
+  .section-padding {
+    @apply py-20 md:py-24 lg:py-28;
+  }
+
+  .container-padding {
+    @apply px-4 md:px-6 lg:px-8;
   }
 }

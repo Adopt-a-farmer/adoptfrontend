@@ -1,450 +1,210 @@
-
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { supabase } from '@/integrations/mock/client';
-import { Users, Leaf, CreditCard, TrendingUp, Package } from 'lucide-react';
+﻿import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Leaf, CreditCard, Package, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { adminService } from '@/services/admin';
 import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
-const fetchDashboardStats = async () => {
-  try {
-    // Get farmers count
-    const { count: farmersCount } = await supabase
-      .from('farmers')
-      .select('*', { count: 'exact', head: true });
-    
-    // Get adopters count
-    const { data: adoptersData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'adopter');
-    
-    // Get payments data
-    const { data: paymentsData } = await supabase
-      .from('payments')
-      .select('*');
-    
-    // Get suppliers count
-    const { count: suppliersCount } = await supabase
-      .from('suppliers')
-      .select('*', { count: 'exact', head: true });
-    
-    // Calculate total revenue
-    const totalRevenue = paymentsData?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
-    
-    return {
-      totalFarmers: farmersCount || 0,
-      totalAdopters: adoptersData?.length || 0,
-      totalPayments: paymentsData?.length || 0,
-      totalRevenue,
-      totalSuppliers: suppliersCount || 0
-    };
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    throw error;
-  }
-};
-
-const fetchPaymentsData = async () => {
-  try {
-    const { data: paymentsData } = await supabase
-      .from('payments')
-      .select('*');
-    
-    // Process payments data for charts
-    const paymentsByMonth: Record<string, number> = {};
-    paymentsData?.forEach(payment => {
-      const date = new Date(payment.payment_date);
-      const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
-      paymentsByMonth[monthYear] = (paymentsByMonth[monthYear] || 0) + payment.amount;
-    });
-    
-    const formattedPaymentsData = Object.keys(paymentsByMonth).map(key => ({
-      name: key,
-      amount: paymentsByMonth[key]
-    }));
-    
-    return formattedPaymentsData.sort((a, b) => {
-      // Sort by date (assuming format is "MMM YYYY")
-      const dateA = new Date(a.name);
-      const dateB = new Date(b.name);
-      return dateA.getTime() - dateB.getTime();
-    });
-  } catch (error) {
-    console.error('Error fetching payments data:', error);
-    throw error;
-  }
-};
-
-const fetchFarmersData = async () => {
-  try {
-    const { data: farmersWithFunding } = await supabase
-      .from('farmers')
-      .select('location, fundingraised');
-    
-    const fundingByLocation: Record<string, number> = {};
-    farmersWithFunding?.forEach(farmer => {
-      fundingByLocation[farmer.location] = (fundingByLocation[farmer.location] || 0) + farmer.fundingraised;
-    });
-    
-    const formattedFarmersData = Object.keys(fundingByLocation).map(key => ({
-      name: key,
-      value: fundingByLocation[key]
-    }));
-    
-    return formattedFarmersData;
-  } catch (error) {
-    console.error('Error fetching farmers data:', error);
-    throw error;
-  }
-};
-
-const generateMonthlyGrowthData = (paymentsData: any[]) => {
-  if (!paymentsData.length) return [];
-  
-  // Convert to monthly growth percentages
-  const growthData = [];
-  for (let i = 1; i < paymentsData.length; i++) {
-    const prevAmount = paymentsData[i-1].amount;
-    const currentAmount = paymentsData[i].amount;
-    const growthPercent = prevAmount > 0 ? ((currentAmount - prevAmount) / prevAmount) * 100 : 100;
-    
-    growthData.push({
-      name: paymentsData[i].name,
-      growth: Math.round(growthPercent * 100) / 100
-    });
-  }
-  
-  return growthData;
-};
+import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: fetchDashboardStats
+  const { data: stats, isLoading, error, refetch } = useQuery({
+    queryKey: ['admin-dashboard-stats'],
+    queryFn: () => adminService.getDashboardStats(),
   });
-  
-  const { data: paymentsData = [], isLoading: paymentsLoading } = useQuery({
-    queryKey: ['paymentsData'],
-    queryFn: fetchPaymentsData
-  });
-  
-  const { data: farmersData = [], isLoading: farmersLoading } = useQuery({
-    queryKey: ['farmersData'],
-    queryFn: fetchFarmersData
-  });
-  
-  const growthData = generateMonthlyGrowthData(paymentsData);
-  
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
+            <p className="text-muted-foreground mb-4">
+              Unable to load dashboard statistics. Please try again.
+            </p>
+            <Button onClick={() => refetch()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard Overview</h1>
+      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="financials">Financials</TabsTrigger>
-          <TabsTrigger value="farmers">Farmers</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <StatsCard 
-              title="Total Farmers"
-              value={stats?.totalFarmers}
-              icon={<Leaf className="h-6 w-6" />}
-              iconColor="green"
-              isLoading={statsLoading}
-            />
-            
-            <StatsCard 
-              title="Total Adopters"
-              value={stats?.totalAdopters}
-              icon={<Users className="h-6 w-6" />}
-              iconColor="blue"
-              isLoading={statsLoading}
-            />
-            
-            <StatsCard 
-              title="Total Payments"
-              value={stats?.totalPayments}
-              icon={<CreditCard className="h-6 w-6" />}
-              iconColor="purple"
-              isLoading={statsLoading}
-            />
-            
-            <StatsCard 
-              title="Total Revenue"
-              value={stats?.totalRevenue}
-              format="currency"
-              icon={<TrendingUp className="h-6 w-6" />}
-              iconColor="amber"
-              isLoading={statsLoading}
-            />
-            
-            <StatsCard 
-              title="Total Suppliers"
-              value={stats?.totalSuppliers}
-              icon={<Package className="h-6 w-6" />}
-              iconColor="indigo"
-              isLoading={statsLoading}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Revenue Overview</CardTitle>
-                <CardDescription>Monthly payment amounts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  {paymentsLoading ? (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <Skeleton className="h-full w-full" />
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={paymentsData}
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 60,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="name" 
-                          angle={-45} 
-                          textAnchor="end" 
-                          height={60}
-                        />
-                        <YAxis />
-                        <Tooltip formatter={(value) => `$${value}`} />
-                        <Bar dataKey="amount" fill="#4f46e5" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Funding by Location</CardTitle>
-                <CardDescription>Distribution of funds raised per location</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  {farmersLoading ? (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <Skeleton className="h-full w-full" />
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={farmersData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {farmersData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `$${value}`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="financials">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monthly Revenue Growth</CardTitle>
-                <CardDescription>Percentage change in revenue month over month</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  {paymentsLoading ? (
-                    <Skeleton className="h-full w-full" />
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={growthData}
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 60,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="name" 
-                          angle={-45} 
-                          textAnchor="end" 
-                          height={60}
-                        />
-                        <YAxis />
-                        <Tooltip formatter={(value) => `${value}%`} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="growth" 
-                          stroke="#8884d8" 
-                          activeDot={{ r: 8 }} 
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* More financial charts could go here */}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="farmers">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Farmer Distribution</CardTitle>
-                <CardDescription>Geographic distribution of farmers</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  {farmersLoading ? (
-                    <Skeleton className="h-full w-full" />
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={farmersData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          outerRadius={120}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label
-                        >
-                          {farmersData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `$${value}`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Growth</CardTitle>
-              <CardDescription>New users over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80 flex items-center justify-center">
-                {statsLoading ? (
-                  <Skeleton className="h-full w-full" />
-                ) : (
-                  <p className="text-center text-muted-foreground">
-                    Detailed user analytics will be available soon
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.users?.total || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              +{stats?.users?.newThisMonth || 0} this month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Verified Farmers</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.farmers?.verified || 0}</div>
+            <p className="text-xs text-muted-foreground">Active farmers</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Farmers</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.farmers?.pending || 0}</div>
+            <p className="text-xs text-muted-foreground">Awaiting verification</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              ${stats?.financial?.totalRevenue?.toLocaleString() || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">Platform revenue</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.activity?.projects?.active || 0}</div>
+            <p className="text-xs text-muted-foreground">Ongoing projects</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Farmer Verification</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground flex items-center">
+                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                Verified
+              </span>
+              <span className="font-medium">{stats?.farmers?.verified || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground flex items-center">
+                <Clock className="h-4 w-4 text-yellow-600 mr-2" />
+                Pending
+              </span>
+              <span className="font-medium">{stats?.farmers?.pending || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground flex items-center">
+                <XCircle className="h-4 w-4 text-red-600 mr-2" />
+                Rejected
+              </span>
+              <span className="font-medium">{stats?.farmers?.rejected || 0}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">User Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Verified Farmers</span>
+              <span className="font-medium">{stats?.farmers?.verified || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Adopters</span>
+              <span className="font-medium">{stats?.users?.adopters || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Experts</span>
+              <span className="font-medium">{stats?.users?.experts || 0}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Financial Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">This Month</span>
+              <span className="font-medium">
+                ${stats?.financial?.revenueThisMonth?.toLocaleString() || 0}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Recent Payments</span>
+              <span className="font-medium">{stats?.financial?.recentPayments || 0}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Activity Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Total Adoptions</span>
+              <span className="font-medium">{stats?.activity?.adoptions?.total || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Active Adoptions</span>
+              <span className="font-medium">{stats?.activity?.adoptions?.active || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Farm Visits</span>
+              <span className="font-medium">{stats?.activity?.visits?.total || 0}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  );
-};
-
-interface StatsCardProps {
-  title: string;
-  value?: number;
-  format?: 'number' | 'currency' | 'percentage';
-  icon: React.ReactNode;
-  iconColor: 'blue' | 'green' | 'purple' | 'amber' | 'indigo';
-  isLoading?: boolean;
-}
-
-const StatsCard = ({ title, value, format = 'number', icon, iconColor, isLoading = false }: StatsCardProps) => {
-  const formatValue = () => {
-    if (value === undefined) return '';
-    
-    switch (format) {
-      case 'currency':
-        return `$${value.toFixed(2)}`;
-      case 'percentage':
-        return `${value}%`;
-      default:
-        return value.toString();
-    }
-  };
-  
-  const getIconClass = () => {
-    const baseClasses = "rounded-full p-3";
-    switch (iconColor) {
-      case 'blue':
-        return `${baseClasses} bg-blue-100 text-blue-600`;
-      case 'green':
-        return `${baseClasses} bg-green-100 text-green-600`;
-      case 'purple':
-        return `${baseClasses} bg-purple-100 text-purple-600`;
-      case 'amber':
-        return `${baseClasses} bg-amber-100 text-amber-600`;
-      case 'indigo':
-        return `${baseClasses} bg-indigo-100 text-indigo-600`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-600`;
-    }
-  };
-  
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            {isLoading ? (
-              <Skeleton className="h-8 w-24 mt-1" />
-            ) : (
-              <p className="text-3xl font-bold">{formatValue()}</p>
-            )}
-          </div>
-          <div className={getIconClass()}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 

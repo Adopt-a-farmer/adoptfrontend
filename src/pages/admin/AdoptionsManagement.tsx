@@ -55,7 +55,7 @@ const AdoptionsManagement = () => {
       adoption.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       adoption.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFarmer = farmerFilter === '' || 
+    const matchesFarmer = farmerFilter === '' || farmerFilter === 'all' || 
       adoption.farmer_id.toString() === farmerFilter;
     
     return matchesSearch && matchesFarmer;
@@ -144,7 +144,7 @@ const AdoptionsManagement = () => {
                   <SelectValue placeholder="Filter by farmer" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Farmers</SelectItem>
+                  <SelectItem value="all">All Farmers</SelectItem>
                   {farmers.map((farmer) => (
                     <SelectItem key={farmer.id} value={farmer.id.toString()}>
                       {farmer.name}

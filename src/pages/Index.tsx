@@ -4,10 +4,11 @@ import Navbar from '@/components/common/Navbar';
 import Footer from '@/components/common/Footer';
 import HeroSection from '@/components/home/HeroSection';
 import HowItWorksSection from '@/components/home/HowItWorks';
-import FeaturedFarmers from '@/components/home/FeaturedFarmers';
 import ImpactSection from '@/components/home/ImpactSection';
 import FeatureSection from '@/components/home/FeatureSection';
+import PartnersSection from '@/components/home/PartnersSection';
 import CallToAction from '@/components/home/CallToAction';
+import ChatFloatingButton from '@/components/chatbot/ChatFloatingButton';
 
 const Index = () => {
   return (
@@ -15,13 +16,14 @@ const Index = () => {
       <Navbar />
       <main className="flex-grow">
         <HeroSection />
-        <HowItWorksSection />
-        <FeaturedFarmers />
-        <ImpactSection />
         <FeatureSection />
+        <ImpactSection />
+        <HowItWorksSection />
+        <PartnersSection />
         <CallToAction />
       </main>
       <Footer />
+      <ChatFloatingButton />
     </div>
   );
 };

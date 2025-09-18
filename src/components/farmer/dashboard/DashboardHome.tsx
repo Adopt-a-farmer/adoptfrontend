@@ -65,11 +65,27 @@ const DashboardHome = () => {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">
-            Welcome back, {farmerProfile?.name || 'Farmer'}! 🌾
-          </h2>
-          <p className="text-muted-foreground">Here's what's happening on your farm today</p>
+        <div className="flex items-center gap-4">
+          {/* Profile Image */}
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+            {farmerProfile?.user?.avatar || farmerProfile?.media?.profileImage?.url ? (
+              <img
+                src={farmerProfile?.user?.avatar || farmerProfile?.media?.profileImage?.url}
+                alt={`${farmerProfile?.user?.firstName || 'Farmer'} profile`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-farmer-primary/10 flex items-center justify-center">
+                <UserCheck className="h-8 w-8 text-farmer-primary" />
+              </div>
+            )}
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">
+              Welcome back, {farmerProfile?.user?.firstName || 'Farmer'}! 🌾
+            </h2>
+            <p className="text-muted-foreground">Here's what's happening on your farm today</p>
+          </div>
         </div>
         <Button className="flex items-center gap-2">
           <FileText className="h-4 w-4" />

@@ -17,8 +17,16 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    console.log('API: Adding token to request...', token ? 'present' : 'missing');
+    
+    if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('API: Token added to Authorization header');
+    } else if (token) {
+      console.warn('API: Invalid token detected, clearing storage...');
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
     }
     return config;
   },
@@ -118,13 +126,22 @@ export const apiCall = async <T>(
   data?: unknown,
   config?: Record<string, unknown>
 ): Promise<T> => {
-  const response = await api.request({
-    method,
-    url: endpoint,
-    data,
-    ...config,
-  });
-  return response.data;
+  console.log(`🌐 API Call: ${method} ${endpoint}`, { data, config });
+  
+  try {
+    const response = await api.request({
+      method,
+      url: endpoint,
+      data,
+      ...config,
+    });
+    
+    console.log(`✅ API Success: ${method} ${endpoint}`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ API Error: ${method} ${endpoint}`, error);
+    throw error;
+  }
 };
 
 export default api;

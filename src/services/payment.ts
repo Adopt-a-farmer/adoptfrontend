@@ -4,11 +4,11 @@ export interface Payment {
   _id: string;
   user: string;
   amount: number;
-  type: 'adoption' | 'crowdfunding' | 'visit' | 'subscription';
+  type: 'adoption' | 'crowdfunding' | 'visit' | 'subscription' | 'contribution';
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
   reference: string;
   gateway: 'paystack';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   failureReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -17,7 +17,11 @@ export interface Payment {
 export interface PaymentInitialization {
   amount: number;
   type: string;
-  metadata?: any;
+  farmerId?: string;
+  adoptionId?: string;
+  contributionType?: 'additional' | 'monthly' | 'one-time';
+  paymentMethod?: 'card' | 'mobile_money';
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentResponse {
@@ -25,7 +29,9 @@ export interface PaymentResponse {
   message: string;
   data: {
     paymentUrl: string;
+    authorization_url: string;
     reference: string;
+    access_code: string;
   };
 }
 
@@ -58,7 +64,7 @@ export const paymentService = {
     startDate?: string;
     endDate?: string;
   }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
     return await apiCall('GET', `/payments${queryString}`);
   },
 
@@ -93,13 +99,13 @@ export const paymentService = {
   },
 
   // Process withdrawal (Farmer)
-  requestWithdrawal: async (amount: number, bankDetails: any) => {
+  requestWithdrawal: async (amount: number, bankDetails: Record<string, unknown>) => {
     return await apiCall('POST', '/payments/withdraw', { amount, bankDetails });
   },
 
   // Get withdrawal history
   getWithdrawals: async (params?: { status?: string; page?: number; limit?: number }) => {
-    const queryString = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
     return await apiCall('GET', `/payments/withdrawals${queryString}`);
   },
 

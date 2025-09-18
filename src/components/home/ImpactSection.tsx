@@ -1,115 +1,155 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ImpactSection = () => {
+  const impactStats = [
+    {
+      number: "250+",
+      label: "Active Farmers",
+      description: "Smallholder farmers supported across Kenya",
+      icon: "👨‍🌾"
+    },
+    {
+      number: "1,500+", 
+      label: "Acres Cultivated",
+      description: "Land transformed into productive farms",
+      icon: "🌱"
+    },
+    {
+      number: "$180K+",
+      label: "Funds Raised",
+      description: "Direct financial support to farmers",
+      icon: "💰"
+    },
+    {
+      number: "98%",
+      label: "Success Rate",
+      description: "Farmers achieving sustainable growth",
+      icon: "📈"
+    }
+  ];
+
   return (
-    <section className="py-16 bg-gradient-to-br from-farmer-primary/10 to-farmer-secondary/10">
+    <section className="py-20 bg-gradient-to-br from-fresh-green/5 to-farmer-secondary/10">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Our Impact</h2>
-          <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-            Through our platform, we're creating real change for farmers and communities across Kenya
+        <div className="text-center mb-16">
+          <span className="text-fresh-green font-semibold text-lg">Our Impact</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-6">
+            Creating Real Change Together
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Through sustainable partnerships and community support, we're transforming lives and 
+            building a stronger agricultural future for Kenya.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <Card className="text-center p-6 border-none shadow-md bg-white">
-            <CardContent className="pt-6">
-              <div className="impact-counter">1,280</div>
-              <h3 className="text-xl font-semibold">Farmers Supported</h3>
-              <p className="text-gray-600 mt-2">Smallholder farmers connected with adopters through our platform</p>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center p-6 border-none shadow-md bg-white">
-            <CardContent className="pt-6">
-              <div className="impact-counter">$850K</div>
-              <h3 className="text-xl font-semibold">Funds Raised</h3>
-              <p className="text-gray-600 mt-2">Financial support provided directly to farmers for their growth</p>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center p-6 border-none shadow-md bg-white">
-            <CardContent className="pt-6">
-              <div className="impact-counter">3,500</div>
-              <h3 className="text-xl font-semibold">Acres Cultivated</h3>
-              <p className="text-gray-600 mt-2">Previously unused land now producing food and supporting families</p>
-            </CardContent>
-          </Card>
+        {/* Impact Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+          {impactStats.map((stat, index) => (
+            <Card key={index} className="text-center p-8 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 bg-white group">
+              <CardContent className="pt-6">
+                <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                  {stat.icon}
+                </div>
+                <div className="text-4xl font-bold text-fresh-green mb-3">{stat.number}</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{stat.label}</h3>
+                <p className="text-gray-600 leading-relaxed">{stat.description}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="environmental">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger value="environmental">Environmental</TabsTrigger>
-              <TabsTrigger value="economic">Economic</TabsTrigger>
-              <TabsTrigger value="social">Social</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="environmental" className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-4 text-farmer-primary">Environmental Impact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">Sustainable Practices</h4>
-                  <p className="text-gray-700">
-                    Our farmers implement sustainable agricultural practices that preserve soil health, 
-                    reduce water usage, and minimize chemical inputs. We've helped reduce agricultural 
-                    carbon footprint by 15% across our network.
-                  </p>
+        {/* Success Stories Section */}
+        <div className="bg-white rounded-3xl p-12 shadow-xl">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-6">
+                Real Stories, Real Impact
+              </h3>
+              <div className="space-y-8">
+                <div className="flex items-start space-x-4">
+                  <div className="w-16 h-16 bg-fresh-green rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg text-gray-900 mb-2">Community Transformation</h4>
+                    <p className="text-gray-600 leading-relaxed">
+                      Our partnerships have helped transform entire communities, creating jobs and improving food security across rural Kenya.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">Biodiversity Protection</h4>
-                  <p className="text-gray-700">
-                    Through crop diversification and integrated pest management, our farmers have 
-                    established over 500 acres of biodiverse farming systems that support local 
-                    ecosystems and wildlife corridors.
-                  </p>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-16 h-16 bg-farmer-secondary rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg text-gray-900 mb-2">Sustainable Growth</h4>
+                    <p className="text-gray-600 leading-relaxed">
+                      Through education and support, farmers are adopting sustainable practices that protect the environment while increasing yields.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="economic" className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-4 text-farmer-primary">Economic Impact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">Income Growth</h4>
-                  <p className="text-gray-700">
-                    Farmers on our platform have seen an average income increase of 60% within their 
-                    first year, allowing families to invest in education, healthcare, and farm improvements.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">Market Access</h4>
-                  <p className="text-gray-700">
-                    Our network has facilitated over $1.2 million in direct-to-consumer and wholesale 
-                    market transactions, eliminating middlemen and increasing farmer profit margins.
-                  </p>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="w-16 h-16 bg-fresh-orange rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg text-gray-900 mb-2">Economic Empowerment</h4>
+                    <p className="text-gray-600 leading-relaxed">
+                      Direct financial support and market access have enabled farmers to achieve financial independence and support their families.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </TabsContent>
+            </div>
             
-            <TabsContent value="social" className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-4 text-farmer-primary">Social Impact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">Community Development</h4>
-                  <p className="text-gray-700">
-                    Through improved livelihoods, our farmers have invested back into their communities, 
-                    supporting 28 local schools and healthcare initiatives across rural Kenya.
-                  </p>
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <img 
+                    src="/farmers2.jpg" 
+                    alt="Farmer success story" 
+                    className="w-full h-48 object-cover rounded-2xl shadow-lg"
+                  />
+                  <img 
+                    src="/farmers4.jpg" 
+                    alt="Community farming" 
+                    className="w-full h-32 object-cover rounded-2xl shadow-lg"
+                  />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-lg mb-2">Women Empowerment</h4>
-                  <p className="text-gray-700">
-                    47% of our farmers are women, many of whom have become community leaders and trainers, 
-                    sharing sustainable farming practices and financial literacy with others.
-                  </p>
+                <div className="space-y-4 pt-8">
+                  <img 
+                    src="/farmers3.jpg" 
+                    alt="Sustainable agriculture" 
+                    className="w-full h-32 object-cover rounded-2xl shadow-lg"
+                  />
+                  <img 
+                    src="/farmers1.jpg" 
+                    alt="Fresh produce" 
+                    className="w-full h-48 object-cover rounded-2xl shadow-lg"
+                  />
                 </div>
               </div>
-            </TabsContent>
-          </Tabs>
+              
+              {/* Floating testimonial */}
+              <div className="absolute -top-4 -left-8 bg-white p-6 rounded-xl shadow-2xl max-w-64 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+                <p className="text-sm text-gray-600 italic mb-3">
+                  "This platform changed my life. I can now support my family and expand my farm."
+                </p>
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-fresh-green rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                    M
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Mary Wanjiku</p>
+                    <p className="text-xs text-gray-500">Kiambu County</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

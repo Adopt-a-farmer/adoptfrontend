@@ -11,13 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageLoader } from '@/components/ui/loading';
-import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar, MessageCircle, Leaf } from 'lucide-react';
+import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar, MessageCircle, Leaf, PlusCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { farmerService, FarmerProfile } from '@/services/farmer';
 import { adoptionService, Adoption } from '@/services/adoption';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import ContributionDialog from '@/components/payment/ContributionDialog';
 
 // Component starts here
 const DiscoverFarmers = () => {
@@ -504,15 +505,19 @@ const FarmerCard = ({
         <div className="flex space-x-2 pt-2">
           {isAdopted ? (
             <>
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="flex-1 bg-orange-50 text-orange-700 border-orange-200 cursor-not-allowed"
-                disabled
-              >
+              <Badge className="flex-1 bg-orange-50 text-orange-700 border-orange-200 justify-center py-2">
                 <Heart className="mr-2 h-4 w-4 fill-current" />
                 Already Adopted
-              </Button>
+              </Badge>
+              <ContributionDialog
+                farmerId={farmer._id}
+                farmerName={`${farmer.user.firstName} ${farmer.user.lastName}`}
+                contributionType="additional"
+                buttonText="Add Funds"
+                buttonVariant="default"
+                buttonSize="sm"
+                className="bg-green-600 hover:bg-green-700"
+              />
               <Link to={`/adopter/messages?farmer=${farmer._id}`}>
                 <Button 
                   size="sm" 
@@ -525,16 +530,17 @@ const FarmerCard = ({
               </Link>
             </>
           ) : (
-            <Dialog open={showAdoptModal} onOpenChange={setShowAdoptModal}>
-              <DialogTrigger asChild>
-                <Button 
-                  size="sm" 
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Adopt Farmer
-                </Button>
-              </DialogTrigger>
+            <>
+              <Dialog open={showAdoptModal} onOpenChange={setShowAdoptModal}>
+                <DialogTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Adopt Farmer
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Adopt {farmer.farmName}</DialogTitle>
@@ -626,6 +632,17 @@ const FarmerCard = ({
                 </div>
               </DialogContent>
             </Dialog>
+            
+            <ContributionDialog
+              farmerId={farmer._id}
+              farmerName={`${farmer.user.firstName} ${farmer.user.lastName}`}
+              contributionType="one-time"
+              buttonText="Support"
+              buttonVariant="outline"
+              buttonSize="sm"
+              className="border-green-600 text-green-600 hover:bg-green-50"
+            />
+          </>
           )}
         </div>
       </CardContent>

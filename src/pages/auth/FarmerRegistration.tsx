@@ -180,7 +180,7 @@ const FarmerRegistration = () => {
       'Content-Type': 'multipart/form-data',
     });
     
-    return (response as UploadResponse).data.url;
+    return (response as UploadResponse).data.secure_url || (response as UploadResponse).data.url;
   };
 
   const validateStep = async (stepNumber: number): Promise<boolean> => {
@@ -753,7 +753,7 @@ const FarmerRegistration = () => {
                     </div>
                     
                     <p className="text-sm text-gray-500 mt-2">
-                      Upload a clear photo of yourself. This helps adopters connect with you personally.
+                      Upload a clear photo of yourself (optional). This helps adopters connect with you personally.
                     </p>
                   </div>
                   

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { apiCall } from '@/services/api';
+import type { FarmerProfile } from '@/services/farmer';
 
 export interface FarmerDashboardStats {
   activeAdopters: number;
@@ -52,11 +53,8 @@ export const useFarmerDashboard = () => {
   });
 
   // Transform the backend data to match our component expectations
-  const farmerProfile = dashboardData?.farmer && typeof dashboardData.farmer === 'object' ? {
-    name: (dashboardData.farmer as { farmName?: string; user?: { firstName?: string; lastName?: string } }).farmName || 
-          `${(dashboardData.farmer as { farmName?: string; user?: { firstName?: string; lastName?: string } }).user?.firstName || ''} ${(dashboardData.farmer as { farmName?: string; user?: { firstName?: string; lastName?: string } }).user?.lastName || ''}`.trim() || 'Farm Name',
-    ...(dashboardData.farmer as Record<string, unknown>)
-  } : null;
+  const farmerProfile: FarmerProfile | null = dashboardData?.farmer && typeof dashboardData.farmer === 'object' ? 
+    dashboardData.farmer as FarmerProfile : null;
 
   const stats: FarmerDashboardStats = dashboardData?.stats && typeof dashboardData.stats === 'object' ? {
     activeAdopters: (dashboardData.stats as { activeAdopters?: number }).activeAdopters || 0,

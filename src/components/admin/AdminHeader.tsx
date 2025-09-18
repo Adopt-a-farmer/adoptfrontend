@@ -110,13 +110,6 @@ const AdminHeader = () => {
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem asChild>
-                  <Link to="/admin/reports" className="flex items-center cursor-pointer">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Reports
-                  </Link>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem asChild>
                   <Link to="/admin/analytics" className="flex items-center cursor-pointer">
                     <BarChart3 className="mr-2 h-4 w-4" />
                     Analytics

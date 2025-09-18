@@ -76,7 +76,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (token) {
+        console.log('AuthContext: Checking token on init...', token ? 'present' : 'missing');
+        
+        if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
           try {
             const res = await authService.getCurrentUser();
             const userData = (res as unknown as { data: { user: User } }).data.user;
@@ -92,7 +94,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(userData);
             setProfile(profileData);
             setIsAuthenticated(true);
-          } catch {
+          } catch (error) {
+            console.error('AuthContext: Invalid token detected, clearing...', error);
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
@@ -101,6 +104,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsAuthenticated(false);
           }
         } else {
+          console.log('AuthContext: No valid token found, clearing storage...');
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
           setUser(null);
           setProfile(null);
@@ -122,6 +128,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await authService.login({ email, password });
       const response = res as unknown as { data: { token: string; refreshToken?: string; user: User } };
       const { token, refreshToken, user: userData } = response.data;
+      
+      console.log('AuthContext: Received login response with token:', token ? 'present' : 'missing');
+      console.log('AuthContext: Token length:', token ? token.length : 0);
+      
+      // Validate token before storing
+      if (!token || token === 'null' || token === 'undefined' || token.trim() === '') {
+        throw new Error('Invalid token received from server');
+      }
       
       localStorage.setItem('token', token);
       if (refreshToken) {

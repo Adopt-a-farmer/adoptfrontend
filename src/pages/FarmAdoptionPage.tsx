@@ -171,7 +171,10 @@ const FarmAdoptionPage: React.FC = () => {
                 <div className="p-6 text-white">
                   <div className="flex items-center gap-4 mb-4">
                     <Avatar className="h-16 w-16 border-2 border-white">
-                      <AvatarImage src={farmer.user?.avatar} alt={farmerName} />
+                      <AvatarImage 
+                        src={farmer.user?.avatar || farmer.media?.farmImages?.[0]?.url} 
+                        alt={farmerName} 
+                      />
                       <AvatarFallback className="text-lg">
                         {farmer.user?.firstName?.[0]}{farmer.user?.lastName?.[0]}
                       </AvatarFallback>

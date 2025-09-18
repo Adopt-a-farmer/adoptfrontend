@@ -35,8 +35,8 @@ const FarmerCard: React.FC<FarmerCardProps> = ({
   const isVerified = farmer.verificationStatus === 'verified';
   const farmImage = farmer.farmImages?.[0];
   const fullName = farmer.farmName; // Use farmName as display name
-  const locationText = `${farmer.location.city}, ${farmer.location.state}`;
-  const establishedYears = new Date().getFullYear() - farmer.establishedYear;
+  const locationText = `${farmer.location.subCounty}, ${farmer.location.county}`;
+  const establishedYears = new Date().getFullYear() - (farmer.establishedYear || new Date().getFullYear());
 
   const handleViewProfile = () => {
     navigate(`/farmers/${farmer._id}`);
@@ -102,7 +102,10 @@ const FarmerCard: React.FC<FarmerCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={farmer.farmImages?.[0]} alt={fullName} />
+              <AvatarImage 
+                src={farmer.media?.profileImage?.url || farmer.media?.farmImages?.[0]?.url} 
+                alt={fullName} 
+              />
               <AvatarFallback>
                 {farmer.farmName?.[0] || 'F'}
               </AvatarFallback>

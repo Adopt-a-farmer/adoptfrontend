@@ -19,28 +19,28 @@ const Navbar = () => {
   const { user, profile, signOut, isAdmin } = useAuth();
 
   return (
-    <header className="bg-white shadow">
+    <header className="bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex h-24 md:h-20 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
                 src="/lovable-uploads/a76a1500-f6bb-4afb-a610-80f8ea83f1fe.png" 
                 alt="Adopt-a-Farmer Logo" 
-                className="h-30 w-auto sm:h-28 md:h-40 object-contain"
+                className="h-12 w-auto object-contain"
               />
             </Link>
           </div>
           
           <div className="hidden md:block">
-            <nav className="ml-10 flex items-center space-x-4">
-              <Link to="/" className="px-3 py-2 text-sm font-medium text-gray-900 hover:text-farmer-primary">
+            <nav className="ml-10 flex items-center space-x-8">
+              <Link to="/" className="px-3 py-2 text-sm font-semibold text-gray-700 hover:text-fresh-green transition-colors duration-300">
                 Home
               </Link>
-              <Link to="/browse-farmers" className="px-3 py-2 text-sm font-medium text-gray-900 hover:text-farmer-primary">
+              <Link to="/browse-farmers" className="px-3 py-2 text-sm font-semibold text-gray-700 hover:text-fresh-green transition-colors duration-300">
                 Browse Farmers
               </Link>
-              <Link to="/how-it-works" className="px-3 py-2 text-sm font-medium text-gray-900 hover:text-farmer-primary">
+              <Link to="/how-it-works" className="px-3 py-2 text-sm font-semibold text-gray-700 hover:text-fresh-green transition-colors duration-300">
                 How It Works
               </Link>
             </nav>
@@ -95,10 +95,10 @@ const Navbar = () => {
               ) : (
                 <>
                   <Link to="/auth/login">
-                    <Button variant="ghost">Log in</Button>
+                    <Button variant="ghost" className="text-gray-700 hover:text-fresh-green hover:bg-fresh-green/10">Log in</Button>
                   </Link>
                   <Link to="/auth/register">
-                    <Button>Sign up</Button>
+                    <Button className="bg-fresh-green hover:bg-farmer-secondary text-white shadow-md">Sign up</Button>
                   </Link>
                 </>
               )}
@@ -108,7 +108,7 @@ const Navbar = () => {
           <div className="flex md:hidden">
             <button
               type="button"
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+              className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-fresh-green/10 hover:text-fresh-green transition-colors duration-300"
               onClick={() => setIsOpen(!isOpen)}
             >
               <span className="sr-only">Open main menu</span>
@@ -124,25 +124,25 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden">
-          <div className="space-y-1 px-2 pb-3 pt-2">
+        <div className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md">
+          <div className="space-y-1 px-4 pb-6 pt-4">
             <Link
               to="/"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+              className="block rounded-lg px-3 py-3 text-base font-semibold text-gray-700 hover:bg-fresh-green/10 hover:text-fresh-green transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
               Home
             </Link>
             <Link
               to="/browse-farmers"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+              className="block rounded-lg px-3 py-3 text-base font-semibold text-gray-700 hover:bg-fresh-green/10 hover:text-fresh-green transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
               Browse Farmers
             </Link>
             <Link
               to="/how-it-works"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
+              className="block rounded-lg px-3 py-3 text-base font-semibold text-gray-700 hover:bg-fresh-green/10 hover:text-fresh-green transition-colors duration-300"
               onClick={() => setIsOpen(false)}
             >
               How It Works

@@ -4,20 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { MapPin, Calendar, Users, Wallet, MessageCircle, Edit, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { MapPin, Calendar, Users, Wallet, MessageCircle, Edit, Loader2, PlusCircle, Eye } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { adoptionService, Adoption } from '@/services/adoption';
+import { contributionService } from '@/services/contribution';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import ContributionDialog from '@/components/payment/ContributionDialog';
 
 const MyFarmers = () => {
   const [editingContribution, setEditingContribution] = useState<{ id: string; amount: number } | null>(null);
   const [isUpdatingContribution, setIsUpdatingContribution] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch adopted farmers using the actual API
-  const { data: adoptedFarmersResponse, isLoading } = useQuery({
+  const { data: adoptedFarmersResponse, isLoading, refetch } = useQuery({
     queryKey: ['adopted-farmers'],
     queryFn: () => adoptionService.getMyAdoptions(),
   });
@@ -41,14 +45,29 @@ const MyFarmers = () => {
   const handleUpdateContribution = async (adoptionId: string, newAmount: number) => {
     setIsUpdatingContribution(true);
     try {
-      // TODO: Implement contribution update API call
-      console.log('Update contribution:', adoptionId, newAmount);
-      setEditingContribution(null);
+      const response = await contributionService.updateMonthlyContribution(adoptionId, newAmount);
+      if (response.success) {
+        toast.success('Monthly contribution updated successfully!');
+        setEditingContribution(null);
+        // Refresh the data
+        queryClient.invalidateQueries({ queryKey: ['adopted-farmers'] });
+        refetch();
+      } else {
+        toast.error(response.message || 'Failed to update contribution');
+      }
     } catch (error) {
       console.error('Failed to update contribution:', error);
+      toast.error('Failed to update contribution. Please try again.');
     } finally {
       setIsUpdatingContribution(false);
     }
+  };
+
+  const handleContributionSuccess = () => {
+    // Refresh the adopted farmers data to show updated contribution amounts
+    queryClient.invalidateQueries({ queryKey: ['adopted-farmers'] });
+    refetch();
+    toast.success('Additional contribution successful!');
   };
 
   if (isLoading) {
@@ -225,14 +244,26 @@ const MyFarmers = () => {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2 pt-2">
-                  <Button size="sm" className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90">
+                  <ContributionDialog
+                    farmerId={adoption.farmer._id}
+                    farmerName={`${adoption.farmer.firstName} ${adoption.farmer.lastName}`}
+                    adoptionId={adoption._id}
+                    contributionType="additional"
+                    buttonText="Add Funds"
+                    buttonVariant="default"
+                    buttonSize="sm"
+                    className="flex-1 bg-farmer-primary hover:bg-farmer-primary/90"
+                    onSuccess={handleContributionSuccess}
+                  />
+                  <Button size="sm" variant="outline" className="flex-1 border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
+                    <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </Button>
                   <Link 
-                    to={`/adopter/chat?farmer=${adoption.farmer._id}`}
+                    to={`/adopter/messages?farmer=${adoption.farmer._id}`}
                     className="flex-1"
                   >
-                    <Button size="sm" variant="outline" className="w-full border-farmer-primary text-farmer-primary hover:bg-farmer-primary hover:text-white">
+                    <Button size="sm" variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50">
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Message
                     </Button>

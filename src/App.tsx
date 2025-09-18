@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import HowItWorksPage from "./pages/HowItWorks";
@@ -23,6 +24,7 @@ import ExpertDashboard from "./pages/expert/ExpertDashboard";
 // Auth pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import SignupFlow from "./pages/auth/SignupFlow";
 import FarmerInvite from "./pages/auth/FarmerInvite";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -33,9 +35,18 @@ import Dashboard from "./pages/admin/Dashboard";
 import FarmersManagement from "./pages/admin/FarmersManagement";
 import AdoptersManagement from "./pages/admin/AdoptersManagement";
 import AdoptionsManagement from "./pages/admin/AdoptionsManagement";
+import PaymentsManagement from "./pages/admin/PaymentsManagement";
+import SuppliersManagement from "./pages/admin/SuppliersManagement";
+import AnalyticsManagement from "./pages/admin/AnalyticsManagement";
+import SettingsManagement from "./pages/admin/SettingsManagement";
+import VerificationManagement from "./pages/admin/VerificationManagement";
+import ExpertsManagement from "./pages/admin/ExpertsManagement";
 
 // Adopter pages
 import AdopterDashboard from "./pages/adopter/AdopterDashboard";
+
+// Common components
+import TawkToWidget from "./components/common/TawkToWidget";
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -44,6 +55,8 @@ import { useEffect } from "react";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const { user } = useAuth();
+  
   return (
     <Routes>
       <Route path="/" element={<Index />} />
@@ -57,7 +70,7 @@ const AppContent = () => {
       
       {/* Auth Routes */}
       <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/register" element={<Register />} />
+      <Route path="/auth/register" element={<SignupFlow />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
       <Route path="/auth/farmer-invite/:token" element={<FarmerInvite />} />
@@ -80,12 +93,13 @@ const AppContent = () => {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="farmers" element={<FarmersManagement />} />
         <Route path="adopters" element={<AdoptersManagement />} />
+        <Route path="experts" element={<ExpertsManagement />} />
+        <Route path="verification" element={<VerificationManagement />} />
         <Route path="adoptions" element={<AdoptionsManagement />} />
-        <Route path="payments" element={<div>Payments Management</div>} />
-        <Route path="suppliers" element={<div>Suppliers Management</div>} />
-        <Route path="reports" element={<div>Reports</div>} />
-        <Route path="analytics" element={<div>Analytics</div>} />
-        <Route path="settings" element={<div>Settings</div>} />
+        <Route path="payments" element={<PaymentsManagement />} />
+        <Route path="suppliers" element={<SuppliersManagement />} />
+        <Route path="analytics" element={<AnalyticsManagement />} />
+        <Route path="settings" element={<SettingsManagement />} />
       </Route>
 
       {/* Adopter Routes */}
@@ -131,6 +145,11 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
+          <TawkToWidget 
+            onLoad={() => console.log('Tawk.to chat loaded')}
+            onChatMaximized={() => console.log('Chat maximized')}
+            onChatMinimized={() => console.log('Chat minimized')}
+          />
           <AppContent />
         </AuthProvider>
       </BrowserRouter>

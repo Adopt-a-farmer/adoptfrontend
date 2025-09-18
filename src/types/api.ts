@@ -317,6 +317,9 @@ export interface Farmer {
   };
   establishedYear?: number;
   media?: {
+    profileImage?: {
+      url: string;
+    };
     farmImages?: Array<{
       url: string;
     }>;

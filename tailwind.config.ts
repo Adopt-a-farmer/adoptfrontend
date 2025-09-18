@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -63,11 +64,21 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for Adopt-A-Farmer
+				// Custom colors for Adopt-A-Farmer (inspired by Tawifresh)
 				farmer: {
-					primary: '#2E7D32', // Dark green
-					secondary: '#81C784', // Light green
-					accent: '#8D6E63' // Warm brown
+					primary: '#00A651', // Fresh green (similar to Tawifresh)
+					secondary: '#7CB342', // Light fresh green
+					accent: '#FF6B35', // Orange accent
+					light: '#E8F5E8', // Very light green
+					dark: '#004225' // Dark green
+				},
+				fresh: {
+					green: '#00A651',
+					lightGreen: '#7CB342',
+					orange: '#FF6B35',
+					lightOrange: '#FFE0D6',
+					gray: '#6B7280',
+					lightGray: '#F3F4F6'
 				}
 			},
 			borderRadius: {
@@ -121,5 +132,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 } satisfies Config;

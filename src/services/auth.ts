@@ -28,6 +28,7 @@ export interface RegisterData {
   password: string;
   phoneNumber?: string;
   role: 'farmer' | 'adopter' | 'expert' | 'admin' | 'investor' | 'buyer' | 'logistics_partner';
+  avatar?: string;
   farmerProfile?: {
     farmName: string;
     description: string;
@@ -146,6 +147,42 @@ export const authService = {
   // Get stored token
   getToken: (): string | null => {
     return localStorage.getItem('token');
+  },
+  
+  // Send OTP for email verification with user data
+  sendOTP: async (email: string, userData?: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    password: string;
+    role: string;
+  }): Promise<{ token: string; message: string }> => {
+    console.log('🔄 Auth Service: Sending OTP request...', { email, userData });
+    
+    const payload = userData ? userData : { email };
+    
+    console.log('📤 Auth Service: Request payload:', payload);
+    
+    const response = await apiCall('POST', '/auth/send-otp', payload);
+    
+    console.log('📥 Auth Service: Response received:', response);
+    
+    return response as { token: string; message: string };
+  },
+
+  // Verify OTP
+  verifyOTP: async (email: string, otp: string, token: string): Promise<{ message: string }> => {
+    return apiCall('POST', '/auth/verify-otp', { email, otp, token });
+  },
+
+  // Complete signup after OTP verification
+  completeSignup: async (formData: FormData): Promise<AuthResponse> => {
+    return apiCall('POST', '/auth/complete-signup', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
   
   // Get stored refresh token

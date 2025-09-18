@@ -9,7 +9,9 @@ import {
   BarChart, 
   Settings,
   UserCheck,
-  Heart
+  Heart,
+  GraduationCap,
+  CheckCircle
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -17,12 +19,13 @@ const AdminSidebar = () => {
   
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Verification', href: '/admin/verification', icon: CheckCircle },
     { name: 'Farmers', href: '/admin/farmers', icon: Users },
+    { name: 'Experts', href: '/admin/experts', icon: GraduationCap },
     { name: 'Adopters', href: '/admin/adopters', icon: UserCheck },
     { name: 'Adoptions', href: '/admin/adoptions', icon: Heart },
     { name: 'Payments', href: '/admin/payments', icon: DollarSign },
     { name: 'Suppliers', href: '/admin/suppliers', icon: Package },
-    { name: 'Reports', href: '/admin/reports', icon: BarChart },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];

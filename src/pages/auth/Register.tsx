@@ -24,6 +24,8 @@ import { X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { authService, RegisterData } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
+import { ImageUpload } from '@/components/ui/ImageUpload';
+import { DocumentUpload } from '@/components/ui/DocumentUpload';
 
 // Kenya counties and sub-counties
 const kenyaLocations = {
@@ -94,6 +96,8 @@ const Register = () => {
   const [selectedFarmingTypes, setSelectedFarmingTypes] = useState<string[]>([]);
   const [selectedCropTypes, setSelectedCropTypes] = useState<string[]>([]);
   const [selectedFarmingMethods, setSelectedFarmingMethods] = useState<string[]>([]);
+  const [profileImage, setProfileImage] = useState<{ url: string; publicId?: string } | null>(null);
+  const [expertDocuments, setExpertDocuments] = useState<any[]>([]);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -146,6 +150,11 @@ const Register = () => {
         role: values.role,
       };
 
+      // Add profile image if provided
+      if (profileImage) {
+        signupData.profileImage = profileImage;
+      }
+
       // Add farmer profile data if role is farmer
       if (values.role === 'farmer') {
         if (!values.farmName || !values.description || !values.county || !values.subCounty || !values.farmSize || !values.farmingType?.length) {
@@ -195,7 +204,9 @@ const Register = () => {
       toast({
         title: "Registration Successful",
         description: values.role === 'farmer' 
-          ? "Welcome! Your farm profile has been created and is ready for adopters to discover."
+          ? "Welcome! Your farm profile has been created and is pending admin approval. You'll be notified once verified."
+          : values.role === 'expert'
+          ? "Welcome! Your expert profile has been created and is pending admin approval. Please ensure you've uploaded verification documents."
           : "Welcome! You're being redirected to your dashboard.",
         variant: "default",
       });
@@ -424,6 +435,15 @@ const Register = () => {
                           <FormMessage />
                         </FormItem>
                       )}
+                    />
+
+                    {/* Profile Image Upload */}
+                    <ImageUpload
+                      label="Farm Profile Picture (Optional)"
+                      description="Upload a representative image of your farm or yourself"
+                      currentImage={profileImage?.url}
+                      onImageUpload={setProfileImage}
+                      onImageRemove={() => setProfileImage(null)}
                     />
 
                     <div className="grid grid-cols-2 gap-4">
@@ -698,6 +718,45 @@ const Register = () => {
                           </FormItem>
                         )}
                       />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Expert-specific fields */}
+              {watchedRole === 'expert' && (
+                <>
+                  {/* Expert Information */}
+                  <div className="space-y-4 border-t pt-6">
+                    <h3 className="text-lg font-medium">Expert Profile Information</h3>
+                    
+                    {/* Profile Image Upload */}
+                    <ImageUpload
+                      label="Profile Picture (Optional)"
+                      description="Upload a professional photo of yourself"
+                      currentImage={profileImage?.url}
+                      onImageUpload={setProfileImage}
+                      onImageRemove={() => setProfileImage(null)}
+                    />
+
+                    {/* Document Upload */}
+                    <DocumentUpload
+                      onDocumentsUpload={setExpertDocuments}
+                      currentDocuments={expertDocuments}
+                      onDocumentRemove={(index) => {
+                        setExpertDocuments(prev => prev.filter((_, i) => i !== index));
+                      }}
+                    />
+
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> Your expert profile will be pending approval. Please upload relevant documents such as:
+                        <br />• Educational certificates/degrees
+                        <br />• Professional certifications
+                        <br />• Professional licenses
+                        <br />• ID documents
+                        <br />• Other verification documents
+                      </p>
                     </div>
                   </div>
                 </>
