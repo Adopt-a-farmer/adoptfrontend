@@ -123,7 +123,6 @@ const FarmerRegistration = () => {
 
   const farmingTypeOptions = [
     { value: 'crop', label: 'Crop Farming' },
-    { value: 'livestock', label: 'Livestock' },
     { value: 'mixed', label: 'Mixed Farming' },
     { value: 'aquaculture', label: 'Aquaculture' },
     { value: 'apiary', label: 'Beekeeping' },

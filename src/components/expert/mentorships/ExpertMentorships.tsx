@@ -87,20 +87,8 @@ const ExpertMentorships = () => {
   };
 
   const getSpecializationIcon = (specialization: string) => {
-    switch (specialization) {
-      case 'crop_management': return '🌱';
-      case 'livestock_care': return '🐄';
-      case 'soil_health': return '🌍';
-      case 'pest_control': return '🐛';
-      case 'irrigation': return '💧';
-      case 'organic_farming': return '🌿';
-      case 'sustainable_practices': return '♻️';
-      case 'marketing': return '📈';
-      case 'financial_planning': return '💰';
-      case 'technology_adoption': return '📱';
-      case 'climate_adaptation': return '🌡️';
-      default: return '📋';
-    }
+    // Return empty string - icons handled by Lucide React components
+    return '';
   };
 
   const formatSpecializationName = (specialization: string) => {

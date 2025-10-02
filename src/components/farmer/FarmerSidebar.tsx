@@ -59,7 +59,7 @@ const FarmerSidebar = () => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary font-semibold">
-            {!collapsed && '🌾 Farmer Dashboard'}
+            {!collapsed && 'Farmer Dashboard'}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

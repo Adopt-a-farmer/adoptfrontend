@@ -14,6 +14,12 @@ import PaymentCallback from "./pages/PaymentCallback";
 import FarmAdoptionPage from "./pages/FarmAdoptionPage";
 import KnowledgeHub from "./pages/KnowledgeHub";
 import ArticleDetail from "./pages/ArticleDetail";
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import FAQPage from "./pages/FAQ";
+import SuccessStories from "./pages/SuccessStories";
+import Blog from "./pages/Blog";
 
 // Farmer pages
 import FarmerDashboard from "./pages/farmer/FarmerDashboard";
@@ -67,6 +73,19 @@ const AppContent = () => {
       <Route path="/payment/callback" element={<PaymentCallback />} />
       <Route path="/knowledge" element={<KnowledgeHub />} />
       <Route path="/knowledge/articles/:id" element={<ArticleDetail />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/faq" element={<FAQPage />} />
+      <Route path="/success-stories" element={<SuccessStories />} />
+      <Route path="/blog" element={<Blog />} />
+      
+      {/* Placeholder routes for footer links */}
+      <Route path="/for-farmers" element={<Navigate to="/browse-farmers" replace />} />
+      <Route path="/for-adopters" element={<Navigate to="/how-it-works" replace />} />
+      <Route path="/farming-calendar" element={<Navigate to="/knowledge" replace />} />
+      <Route path="/cookies" element={<PrivacyPolicy />} />
       
       {/* Auth Routes */}
       <Route path="/auth/login" element={<Login />} />

@@ -635,9 +635,7 @@ const SignupFlow = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="crop">Crop Farming</SelectItem>
-                  <SelectItem value="livestock">Livestock</SelectItem>
                   <SelectItem value="dairy">Dairy Farming</SelectItem>
-                  <SelectItem value="poultry">Poultry</SelectItem>
                   <SelectItem value="mixed">Mixed Farming</SelectItem>
                   <SelectItem value="organic">Organic Farming</SelectItem>
                   <SelectItem value="aquaculture">Aquaculture</SelectItem>
@@ -670,7 +668,6 @@ const SignupFlow = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="crop_management">Crop Management</SelectItem>
-                  <SelectItem value="livestock_care">Livestock Care</SelectItem>
                   <SelectItem value="soil_health">Soil Health</SelectItem>
                   <SelectItem value="pest_control">Pest Control</SelectItem>
                   <SelectItem value="irrigation">Irrigation</SelectItem>
@@ -860,7 +857,7 @@ const SignupFlow = () => {
         <div className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
           <button 
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/auth/login')}
             className="text-blue-600 hover:underline font-medium"
           >
             Sign in here

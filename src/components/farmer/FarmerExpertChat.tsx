@@ -76,7 +76,6 @@ const FarmerExpertChat = () => {
   const getSpecializationColor = (specialization: string) => {
     const colors = {
       'crop_management': 'bg-green-100 text-green-800',
-      'livestock_care': 'bg-blue-100 text-blue-800',
       'soil_health': 'bg-amber-100 text-amber-800',
       'pest_control': 'bg-red-100 text-red-800',
       'irrigation': 'bg-cyan-100 text-cyan-800',

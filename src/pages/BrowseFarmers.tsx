@@ -10,8 +10,12 @@ const BrowseFarmers = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-green-600 to-green-700 text-white py-16">
-        <div className="container mx-auto px-4">
+      <section className="relative bg-gradient-to-r from-green-600 to-green-700 text-white py-16 overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-20">
+          <img src="/farmers1.jpg" alt="Farmers background" className="w-full h-full object-cover" />
+        </div>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
               Discover Amazing Farmers
@@ -94,6 +98,36 @@ const BrowseFarmers = () => {
                 <p className="text-gray-600">
                   All transactions are secured through our trusted payment gateway with transparent fee structure.
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-16 bg-gradient-to-br from-fresh-green to-farmer-primary text-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">We Are Found in Kenya</h2>
+            <p className="text-xl mb-8 text-white/90">
+              Adopt-A-Farmer is proudly based in Kenya, connecting farmers and adopters 
+              across all 47 counties to build a sustainable agricultural future.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-white/90">
+              <div className="flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Nairobi, Kenya</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <a href="mailto:info@adoptafarmer.co.ke" className="hover:text-yellow-300 transition-colors">
+                  info@adoptafarmer.co.ke
+                </a>
               </div>
             </div>
           </div>

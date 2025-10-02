@@ -15,7 +15,7 @@ const counties = [
 // Crop types
 const cropTypes = [
   "All Crops", "Coffee", "Tea", "Maize", "Wheat", "Rice", 
-  "Vegetables", "Fruits", "Dairy", "Poultry", "Fish"
+  "Vegetables", "Fruits"
 ];
 
 interface FarmerFiltersProps {

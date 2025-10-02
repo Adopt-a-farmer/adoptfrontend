@@ -108,7 +108,6 @@ export interface CalendarParams {
   month?: number;
   category?: string;
   crop?: string;
-  livestock?: string;
 }
 
 // Farmer Types
@@ -210,7 +209,6 @@ export interface CalendarEntryData {
   };
   region: string;
   cropType?: string[];
-  livestockType?: string[];
   priority: string;
   resources: string[];
   tips: string[];

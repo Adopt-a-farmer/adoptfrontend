@@ -82,7 +82,7 @@ const DashboardHome = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              Welcome back, {farmerProfile?.user?.firstName || 'Farmer'}! 🌾
+              Welcome back, {farmerProfile?.user?.firstName || 'Farmer'}!
             </h2>
             <p className="text-muted-foreground">Here's what's happening on your farm today</p>
           </div>

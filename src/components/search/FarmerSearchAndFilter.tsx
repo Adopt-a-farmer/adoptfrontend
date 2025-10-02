@@ -83,7 +83,7 @@ const CROP_OPTIONS = [
 ];
 
 const FARMING_TYPES = [
-  'crop', 'livestock', 'mixed', 'aquaculture', 'apiary'
+  'crop', 'mixed', 'aquaculture', 'apiary'
 ];
 
 const KENYAN_COUNTIES = [

@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PageLoader } from '@/components/ui/loading';
-import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar, MessageCircle, Eye, BookOpen } from 'lucide-react';
+import { MapPin, Users, Wallet, Loader2, Heart, Star, Phone, Mail, Calendar, MessageCircle, Eye, BookOpen, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { farmerService, FarmerProfile } from '@/services/farmer';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { FarmerAvailabilityScheduler } from './FarmerAvailabilityScheduler';
 
 const ExpertDiscoverFarmers = () => {
   const { user } = useAuth();
@@ -229,6 +230,7 @@ const ExpertFarmerCard = ({
 }) => {
   const { toast } = useToast();
   const [showContactDialog, setShowContactDialog] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   
   const defaultImage = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80";
 
@@ -363,6 +365,19 @@ const ExpertFarmerCard = ({
             <BookOpen className="mr-2 h-4 w-4" />
             Offer Mentorship
           </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => setShowScheduleDialog(true)}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            Schedule Visit
+          </Button>
+        </div>
+
+        {/* Second Row of Action Buttons */}
+        <div className="flex space-x-2">
           <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
             <DialogTrigger asChild>
               <Button 
@@ -431,6 +446,15 @@ const ExpertFarmerCard = ({
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Farm Visit Scheduler */}
+        <FarmerAvailabilityScheduler
+          open={showScheduleDialog}
+          onOpenChange={setShowScheduleDialog}
+          farmerId={farmer._id}
+          farmerName={farmer.farmName}
+          farmerLocation={`${farmer.location?.subCounty}, ${farmer.location?.county}`}
+        />
       </CardContent>
     </Card>
   );

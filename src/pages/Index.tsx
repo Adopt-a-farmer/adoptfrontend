@@ -3,6 +3,7 @@ import React from 'react';
 import Navbar from '@/components/common/Navbar';
 import Footer from '@/components/common/Footer';
 import HeroSection from '@/components/home/HeroSection';
+import AboutSection from '@/components/home/AboutSection';
 import HowItWorksSection from '@/components/home/HowItWorks';
 import ImpactSection from '@/components/home/ImpactSection';
 import FeatureSection from '@/components/home/FeatureSection';
@@ -16,6 +17,7 @@ const Index = () => {
       <Navbar />
       <main className="flex-grow">
         <HeroSection />
+        <AboutSection />
         <FeatureSection />
         <ImpactSection />
         <HowItWorksSection />

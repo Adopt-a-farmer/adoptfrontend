@@ -30,8 +30,17 @@ const ImpactSection = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-fresh-green/5 to-farmer-secondary/10">
-      <div className="container mx-auto px-4">
+    <section className="py-20 relative overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img 
+          src="/farmers3.jpg" 
+          alt="Impact background" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/90 to-fresh-green/20"></div>
+      </div>
+      <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
           <span className="text-fresh-green font-semibold text-lg">Our Impact</span>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-6">

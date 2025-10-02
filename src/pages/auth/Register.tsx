@@ -42,7 +42,7 @@ const kenyaLocations = {
 };
 
 // Farming options
-const farmingTypes = ['crop', 'livestock', 'mixed', 'aquaculture', 'apiary'];
+const farmingTypes = ['crop', 'mixed', 'aquaculture', 'apiary'];
 const cropTypes = ['maize', 'beans', 'rice', 'wheat', 'vegetables', 'fruits', 'coffee', 'tea', 'sugarcane', 'cotton', 'sunflower', 'sorghum', 'millet'];
 const farmingMethods = ['organic', 'conventional', 'permaculture', 'hydroponics', 'agroforestry', 'conservation_agriculture', 'precision_farming', 'sustainable_agriculture'];
 

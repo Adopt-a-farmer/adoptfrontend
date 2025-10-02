@@ -37,30 +37,6 @@ export const farmers = [
     featured: true
   },
   {
-    id: 4,
-    name: "Grace Mutua",
-    location: "Machakos County",
-    image: "https://images.unsplash.com/photo-1569072712109-6206fa3505b4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    description: "Poultry farmer seeking support for sustainable free-range egg production. I manage a small poultry farm with 200 chickens that produce free-range eggs. The demand for our eggs exceeds our supply, and we're looking to expand our flock and improve our housing facilities. We practice sustainable farming by using chicken waste as fertilizer for our small vegetable garden and integrating pest control through the chickens' natural foraging.",
-    fundingGoal: 1000,
-    fundingRaised: 300,
-    supporters: 3,
-    crops: ["Eggs", "Poultry"],
-    featured: true
-  },
-  {
-    id: 5,
-    name: "Daniel Mwangi",
-    location: "Kiambu County",
-    image: "https://images.unsplash.com/photo-1560493676-04071c5f467b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    description: "Dairy farmer working to improve milk production through better cattle breeds and feeds. I operate a small dairy farm with 10 cows producing milk for local processing. We're working to improve our herd through better breeding and nutrition. Our goal is to increase milk production while maintaining quality, and eventually process our own dairy products like yogurt and cheese.",
-    fundingGoal: 2000,
-    fundingRaised: 900,
-    supporters: 7,
-    crops: ["Dairy", "Fodder"],
-    featured: false
-  },
-  {
     id: 6,
     name: "Elizabeth Njeri",
     location: "Meru County",

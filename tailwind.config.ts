@@ -127,8 +127,8 @@ export default {
 				'pulse-slow': 'pulse-slow 3s infinite ease-in-out'
 			},
 			fontFamily: {
-				sans: ['Inter', 'sans-serif'],
-				heading: ['Montserrat', 'sans-serif']
+				sans: ['Poppins', 'sans-serif'],
+				heading: ['Poppins', 'sans-serif']
 			}
 		}
 	},

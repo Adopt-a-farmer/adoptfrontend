@@ -61,8 +61,8 @@ export const useFarmerDashboard = () => {
     totalContributions: (dashboardData.stats as { totalEarnings?: number }).totalEarnings || 0,
     upcomingVisits: (dashboardData.stats as { upcomingVisits?: number }).upcomingVisits || 0,
     updatesShared: (dashboardData.stats as { totalUpdates?: number }).totalUpdates || 0,
-    monthlyGoalProgress: (dashboardData.stats as { monthlyGoalProgress?: number }).monthlyGoalProgress || 65,
-    adopterSatisfaction: 85, // Mock data - would need backend implementation
+    monthlyGoalProgress: (dashboardData.stats as { monthlyGoalProgress?: number }).monthlyGoalProgress || 0,
+    adopterSatisfaction: (dashboardData.stats as { adopterSatisfaction?: number }).adopterSatisfaction || 0,
     successfulVisits: (dashboardData.stats as { completedVisits?: number }).completedVisits || 0
   } : {
     activeAdopters: 0,
