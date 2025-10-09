@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -31,6 +32,7 @@ const Login = () => {
   const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const redirectTo = queryParams.get('redirect');
+  const { toast } = useToast();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,7 +87,26 @@ const Login = () => {
       }
     } catch (error: Error | unknown) {
       console.error('Login error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred during login';
+      
+      // Check if error is for unverified email
+      const apiError = error as { response?: { status?: number; data?: { requiresVerification?: boolean; token?: string; email?: string; message?: string } } };
+      
+      if (apiError?.response?.status === 403 && apiError?.response?.data?.requiresVerification) {
+        // Redirect to email verification page with token
+        const token = apiError.response.data.token;
+        const email = apiError.response.data.email || values.email;
+        
+        toast({
+          title: 'Email Verification Required',
+          description: 'Please verify your email to continue. Check your inbox for the verification code.',
+          variant: 'default'
+        });
+        
+        navigate(`/auth/verify-email?email=${encodeURIComponent(email)}&token=${token}`);
+        return;
+      }
+      
+      const errorMessage = apiError?.response?.data?.message || (error instanceof Error ? error.message : 'An error occurred during login');
       setErrorMessage(errorMessage);
     }
   };

@@ -27,7 +27,7 @@ export interface Profile {
   [key: string]: unknown;
 }
 
-interface SignUpData {
+export interface SignUpData {
   firstName: string;
   lastName: string;
   email: string;

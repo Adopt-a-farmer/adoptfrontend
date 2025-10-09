@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useFarmerDashboard } from '@/hooks/useFarmerDashboard';
 import FarmerExpertChat from '../FarmerExpertChat';
+import FarmerAvailabilityAndExperts from './FarmerAvailabilityAndExperts';
 
 const DashboardHome = () => {
   const { farmerProfile, stats, recentActivity, tasks, isLoading } = useFarmerDashboard();
@@ -147,6 +148,9 @@ const DashboardHome = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Availability and Experts Section */}
+      <FarmerAvailabilityAndExperts />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

@@ -1,9 +1,12 @@
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useToast } from '@/hooks/use-toast';
+import { AuthContext, type SignUpData } from '@/context/AuthContext';
+import { authService, type RegisterData } from '@/services/auth';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -21,9 +24,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { authService, RegisterData } from '@/services/auth';
-import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DocumentUpload } from '@/components/ui/DocumentUpload';
 
@@ -88,7 +88,8 @@ const formSchema = z.object({
 });
 
 const Register = () => {
-  const { signUp } = useAuth();
+  const authContext = useContext(AuthContext);
+  const signUp = authContext?.signUp;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,7 +98,13 @@ const Register = () => {
   const [selectedCropTypes, setSelectedCropTypes] = useState<string[]>([]);
   const [selectedFarmingMethods, setSelectedFarmingMethods] = useState<string[]>([]);
   const [profileImage, setProfileImage] = useState<{ url: string; publicId?: string } | null>(null);
-  const [expertDocuments, setExpertDocuments] = useState<any[]>([]);
+  const [expertDocuments, setExpertDocuments] = useState<Array<{
+    type: string;
+    url: string;
+    fileName: string;
+    uploadDate: Date;
+    status: 'pending' | 'approved' | 'rejected';
+  }>>([]);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -196,7 +203,16 @@ const Register = () => {
       }
       
       // Use AuthContext signUp method
-      const result = await signUp(signupData as RegisterData);
+      // Filter out admin and other extended roles for auth service
+      const authData: SignUpData = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+        role: values.role as 'farmer' | 'adopter' | 'expert',
+        phoneNumber: values.phoneNumber
+      };
+      const result = signUp && await signUp(authData);
       
       console.log('Registration successful:', result);
       

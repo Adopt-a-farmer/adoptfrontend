@@ -14,6 +14,7 @@ import InvestorFarmerRelationships from '@/components/expert/investors/InvestorF
 import ExpertMessaging from '@/components/expert/messages/ExpertMessaging';
 import ExpertFarmVisits from '@/components/expert/visits/ExpertFarmVisits';
 import ExpertDiscoverFarmers from '@/components/expert/farmers/DiscoverFarmers';
+import ExpertBlockchainDashboard from '@/components/expert/blockchain/ExpertBlockchainDashboard';
 
 const ExpertDashboard = () => {
   return (
@@ -28,6 +29,7 @@ const ExpertDashboard = () => {
         <Route path="investors" element={<InvestorFarmerRelationships />} />
         <Route path="messages" element={<ExpertMessaging />} />
         <Route path="visits" element={<ExpertFarmVisits />} />
+        <Route path="blockchain" element={<ExpertBlockchainDashboard />} />
         <Route path="profile" element={<ExpertProfile />} />
         <Route path="analytics" element={<KnowledgeAnalytics />} />
         <Route path="calendar" element={<CalendarManager />} />

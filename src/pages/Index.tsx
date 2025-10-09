@@ -7,6 +7,7 @@ import AboutSection from '@/components/home/AboutSection';
 import HowItWorksSection from '@/components/home/HowItWorks';
 import ImpactSection from '@/components/home/ImpactSection';
 import FeatureSection from '@/components/home/FeatureSection';
+import BlockchainFeatures from '@/components/home/BlockchainFeatures';
 import PartnersSection from '@/components/home/PartnersSection';
 import CallToAction from '@/components/home/CallToAction';
 import ChatFloatingButton from '@/components/chatbot/ChatFloatingButton';
@@ -18,6 +19,7 @@ const Index = () => {
       <main className="flex-grow">
         <HeroSection />
         <AboutSection />
+        <BlockchainFeatures />
         <FeatureSection />
         <ImpactSection />
         <HowItWorksSection />

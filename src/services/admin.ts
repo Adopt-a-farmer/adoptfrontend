@@ -558,6 +558,49 @@ export const adminService = {
 
     const response = await api.get(`/admin/verification?${query.toString()}`);
     return response.data;
+  },
+
+  // Get user details with documents
+  async getUserDetails(userId: string) {
+    const response = await api.get(`/admin/users/${userId}/details`);
+    return response.data;
+  },
+
+  // Suspend or unsuspend user
+  async suspendUser(userId: string, suspend: boolean, reason?: string) {
+    const response = await api.post(`/admin/users/${userId}/suspend`, {
+      suspend,
+      reason
+    });
+    return response.data;
+  },
+
+  // Create adoption (link farmer with adopter)
+  async createAdoption(data: {
+    farmerId: string;
+    adopterId: string;
+    adoptionType?: string;
+    paymentPlan?: {
+      type: string;
+      amount: number;
+      frequency: string;
+    };
+    notes?: string;
+  }) {
+    const response = await api.post('/admin/adoptions/create', data);
+    return response.data;
+  },
+
+  // Get available/unassigned farmers
+  async getUnassignedFarmers() {
+    const response = await api.get('/admin/farmers/unassigned');
+    return response.data;
+  },
+
+  // Get available adopters
+  async getAvailableAdopters() {
+    const response = await api.get('/admin/adopters/available');
+    return response.data;
   }
 };
 

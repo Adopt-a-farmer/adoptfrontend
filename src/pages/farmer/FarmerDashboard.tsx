@@ -11,6 +11,8 @@ import FarmVisitScheduler from '@/components/farmer/visits/FarmVisitScheduler';
 import KnowledgeHubTraining from '@/components/farmer/knowledge/KnowledgeHubTraining';
 import ImpactReporting from '@/components/farmer/reports/ImpactReporting';
 import FarmerProfileSettings from '@/components/farmer/settings/FarmerProfileSettings';
+import FarmerBlockchainDashboard from '@/components/farmer/blockchain/FarmerBlockchainDashboard';
+import FarmerStoriesPage from '@/pages/farmer/FarmerStoriesPage';
 
 const FarmerDashboard = () => {
   return (
@@ -24,7 +26,9 @@ const FarmerDashboard = () => {
         <Route path="wallet" element={<WalletWithdrawals />} />
         <Route path="visits" element={<FarmVisitScheduler />} />
         <Route path="knowledge" element={<KnowledgeHubTraining />} />
+        <Route path="stories" element={<FarmerStoriesPage />} />
         <Route path="reports" element={<ImpactReporting />} />
+        <Route path="blockchain" element={<FarmerBlockchainDashboard />} />
         <Route path="settings" element={<FarmerProfileSettings />} />
       </Routes>
     </FarmerLayout>

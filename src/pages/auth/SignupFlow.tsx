@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,47 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { authService } from '@/services/auth';
+
+// ResendOTP Button Component with Countdown
+const ResendOTPButton = ({ onResend, disabled }: { onResend: () => Promise<void>; disabled: boolean }) => {
+  const [countdown, setCountdown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  const handleResend = async () => {
+    setIsResending(true);
+    try {
+      await onResend();
+      setCountdown(60); // 60 second countdown
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  if (countdown > 0) {
+    return (
+      <p className="text-sm text-gray-500">
+        Resend code in <span className="font-semibold">{countdown}s</span>
+      </p>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleResend}
+      className="text-sm text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+      disabled={disabled || isResending}
+    >
+      {isResending ? 'Sending...' : "Didn't receive the code? Resend"}
+    </button>
+  );
+};
 
 interface SignupData {
   // Basic details
@@ -54,6 +95,11 @@ interface SignupData {
   bio?: string;
   experience?: number;
   hourlyRate?: number;
+  certificates?: File[];
+  profilePicture?: File;
+  
+  // Adopter specific
+  donationAmount?: number;
   
   // Documents
   documents?: File[];
@@ -89,7 +135,18 @@ const SignupFlow = () => {
     { number: 5, title: 'Documents', description: 'Upload verification documents' }
   ];
 
-  const updateSignupData = (field: keyof SignupData, value: string | number | string[] | File[]) => {
+  const getTotalSteps = () => {
+    if (signupData.role === 'adopter') return 4;
+    if (signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0) return 4;
+    return 5;
+  };
+
+  const getMaxConnectorIndex = () => {
+    const totalSteps = getTotalSteps();
+    return totalSteps - 1;
+  };
+
+  const updateSignupData = (field: keyof SignupData, value: string | number | string[] | File | File[]) => {
     setSignupData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -235,14 +292,128 @@ const SignupFlow = () => {
     }
   };
 
+  const resendOTP = async () => {
+    try {
+      const response = await authService.resendOTP(signupData.email, verificationToken);
+      
+      toast({
+        title: 'Code Resent',
+        description: 'A new verification code has been sent to your email',
+      });
+      
+      console.log('✅ OTP Resent successfully:', response);
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast({
+        title: 'Resend Failed',
+        description: apiError?.response?.data?.message || 'Failed to resend verification code',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const completeRegistration = async () => {
     setIsLoading(true);
     try {
+      let uploadedDocumentUrls = [];
+      let uploadedCertificateUrls = [];
+      let uploadedProfilePictureUrl = null;
+      
+      // Upload profile picture first if exists
+      if (signupData.profilePicture) {
+        try {
+          const pictureFormData = new FormData();
+          pictureFormData.append('images', signupData.profilePicture);
+          
+          const pictureResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL + '/api' || 'http://localhost:5000/api'}/upload/registration-documents`, {
+            method: 'POST',
+            body: pictureFormData,
+          });
+          
+          if (pictureResponse.ok) {
+            const pictureResult = await pictureResponse.json();
+            if (pictureResult.success && pictureResult.data.documents?.[0]) {
+              uploadedProfilePictureUrl = pictureResult.data.documents[0];
+              console.log('✅ Profile picture uploaded:', uploadedProfilePictureUrl);
+            }
+          }
+        } catch (error) {
+          console.error('Profile picture upload error:', error);
+        }
+      }
+      
+      // Upload certificates for experts
+      if (signupData.certificates && signupData.certificates.length > 0 && signupData.role === 'expert') {
+        try {
+          const certFormData = new FormData();
+          signupData.certificates.forEach((file) => {
+            certFormData.append('images', file);
+          });
+          
+          const certResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL + '/api' || 'http://localhost:5000/api'}/upload/registration-documents`, {
+            method: 'POST',
+            body: certFormData,
+          });
+          
+          if (certResponse.ok) {
+            const certResult = await certResponse.json();
+            if (certResult.success && certResult.data.documents) {
+              uploadedCertificateUrls = certResult.data.documents;
+              console.log('✅ Certificates uploaded:', uploadedCertificateUrls.length);
+              
+              toast({
+                title: 'Certificates Uploaded',
+                description: `${uploadedCertificateUrls.length} certificate(s) uploaded successfully`,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Certificate upload error:', error);
+        }
+      }
+      
+      // Upload verification documents for farmers/experts
+      if (signupData.documents && signupData.documents.length > 0 && signupData.role !== 'adopter') {
+        try {
+          const docFormData = new FormData();
+          signupData.documents.forEach((file) => {
+            docFormData.append('documents', file);
+          });
+          
+          const uploadResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL + '/api' || 'http://localhost:5000/api'}/upload/registration-documents`, {
+            method: 'POST',
+            body: docFormData,
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload documents');
+          }
+          
+          const uploadResult = await uploadResponse.json();
+          
+          if (uploadResult.success && uploadResult.data.documents) {
+            uploadedDocumentUrls = uploadResult.data.documents;
+            
+            toast({
+              title: 'Documents Uploaded',
+              description: `${uploadedDocumentUrls.length} document(s) uploaded successfully to Cloudinary`,
+            });
+          }
+        } catch (uploadError) {
+          console.error('Document upload error:', uploadError);
+          toast({
+            title: 'Document Upload Failed',
+            description: 'Failed to upload documents. Continuing with registration...',
+            variant: 'destructive'
+          });
+        }
+      }
+      
       const formData = new FormData();
       
       // Add basic data
       Object.keys(signupData).forEach(key => {
-        if (key === 'documents') return;
+        if (key === 'documents' || key === 'certificates' || key === 'profilePicture') return; // Skip files
         if (key === 'location') {
           formData.append('location', JSON.stringify(signupData.location));
         } else if (key === 'specializations') {
@@ -255,9 +426,26 @@ const SignupFlow = () => {
         }
       });
       
-      // Add documents
-      signupData.documents?.forEach((file, index) => {
-        formData.append(`documents`, file);
+      // Add uploaded file URLs
+      if (uploadedDocumentUrls.length > 0) {
+        formData.append('documents', JSON.stringify(uploadedDocumentUrls));
+      }
+      
+      if (uploadedCertificateUrls.length > 0) {
+        formData.append('certificates', JSON.stringify(uploadedCertificateUrls));
+      }
+      
+      if (uploadedProfilePictureUrl) {
+        formData.append('profilePicture', JSON.stringify(uploadedProfilePictureUrl));
+      }
+      
+      console.log('📤 Completing registration with data:', {
+        role: signupData.role,
+        hasDocuments: uploadedDocumentUrls.length > 0,
+        hasCertificates: uploadedCertificateUrls.length > 0,
+        hasProfilePicture: !!uploadedProfilePictureUrl,
+        hasBio: !!signupData.bio,
+        hasDonationAmount: !!signupData.donationAmount
       });
       
       const response = await authService.completeSignup(formData);
@@ -467,13 +655,10 @@ const SignupFlow = () => {
       </div>
       
       <div className="text-center">
-        <button
-          onClick={sendOTP}
-          className="text-sm text-blue-600 hover:underline"
+        <ResendOTPButton 
+          onResend={resendOTP}
           disabled={isLoading}
-        >
-          Didn't receive the code? Resend
-        </button>
+        />
       </div>
     </div>
   );
@@ -574,8 +759,51 @@ const SignupFlow = () => {
             <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
               <UserCheck className="h-8 w-8 text-purple-600" />
             </div>
-            <h2 className="text-2xl font-bold">Almost Done!</h2>
-            <p className="text-gray-600 mt-2">As an adopter, you're ready to start supporting farmers</p>
+            <h2 className="text-2xl font-bold">Adopter Profile</h2>
+            <p className="text-gray-600 mt-2">Tell us about your interest in supporting farmers</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="adopterBio">About You</Label>
+              <Textarea
+                id="adopterBio"
+                placeholder="Tell us why you want to adopt a farmer and support agriculture..."
+                value={signupData.bio || ''}
+                onChange={(e) => updateSignupData('bio', e.target.value)}
+                className="mt-1"
+                rows={4}
+              />
+              <p className="text-xs text-gray-500 mt-1">Share your motivation and goals</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="donationAmount">Preferred Monthly Donation (USD)</Label>
+              <Input
+                id="donationAmount"
+                type="number"
+                placeholder="100"
+                value={signupData.donationAmount || ''}
+                onChange={(e) => updateSignupData('donationAmount', parseInt(e.target.value))}
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Optional: Indicate your preferred contribution amount</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="adopterPhoto">Profile Picture (Optional)</Label>
+              <Input
+                id="adopterPhoto"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) updateSignupData('profilePicture', file);
+                }}
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Add a profile picture to personalize your account</p>
+            </div>
           </div>
           
           <div className="flex space-x-2">
@@ -588,12 +816,34 @@ const SignupFlow = () => {
               Back
             </Button>
             <Button 
-              onClick={completeRegistration} 
+              onClick={() => {
+                // For experts who uploaded certificates, skip step 5 and complete registration
+                if (signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0) {
+                  completeRegistration();
+                } else {
+                  setCurrentStep(5);
+                }
+              }} 
               className="flex-1"
               disabled={isLoading}
             >
-              {isLoading ? 'Creating Account...' : 'Complete Registration'}
-              <CheckCircle className="ml-2 h-4 w-4" />
+              {isLoading ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Completing...
+                </>
+              ) : (
+                <>
+                  {(signupData.role !== 'adopter' && signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0)
+                    ? 'Complete Registration' 
+                    : 'Continue'
+                  }
+                  {(signupData.role !== 'adopter' && signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0)
+                    ? <CheckCircle className="ml-2 h-4 w-4" />
+                    : <ArrowRight className="ml-2 h-4 w-4" />
+                  }
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -604,7 +854,7 @@ const SignupFlow = () => {
       <div className="space-y-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold">
-            {signupData.role === 'farmer' ? 'Farm Information' : 'Expert Details'}
+            {signupData.role === 'farmer' ? 'Farm Information' : 'Expert Profile'}
           </h2>
           <p className="text-gray-600 mt-2">
             {signupData.role === 'farmer' 
@@ -658,7 +908,21 @@ const SignupFlow = () => {
         ) : (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="specializations">Specializations</Label>
+              <Label htmlFor="bio">Professional Bio *</Label>
+              <Textarea
+                id="bio"
+                placeholder="Tell us about your expertise, experience, and approach to agricultural consulting..."
+                value={signupData.bio || ''}
+                onChange={(e) => updateSignupData('bio', e.target.value)}
+                className="mt-1"
+                rows={4}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Describe your background and specializations</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="specializations">Primary Specialization</Label>
               <Select 
                 value={signupData.specializations?.[0] || ''} 
                 onValueChange={(value) => updateSignupData('specializations', [value])}
@@ -685,7 +949,7 @@ const SignupFlow = () => {
                 id="experience"
                 type="number"
                 placeholder="10"
-                value={signupData.experience}
+                value={signupData.experience || ''}
                 onChange={(e) => updateSignupData('experience', parseInt(e.target.value))}
                 className="mt-1"
               />
@@ -697,22 +961,53 @@ const SignupFlow = () => {
                 id="hourlyRate"
                 type="number"
                 placeholder="50"
-                value={signupData.hourlyRate}
+                value={signupData.hourlyRate || ''}
                 onChange={(e) => updateSignupData('hourlyRate', parseInt(e.target.value))}
                 className="mt-1"
               />
             </div>
             
             <div>
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us about your expertise and experience..."
-                value={signupData.bio}
-                onChange={(e) => updateSignupData('bio', e.target.value)}
+              <Label htmlFor="profilePicture">Profile Picture</Label>
+              <Input
+                id="profilePicture"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) updateSignupData('profilePicture', file);
+                }}
                 className="mt-1"
-                rows={4}
               />
+              <p className="text-xs text-gray-500 mt-1">Upload a professional photo</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="certificates">Certificates & Credentials</Label>
+              <Input
+                id="certificates"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  updateSignupData('certificates', files);
+                }}
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload your certifications, degrees, or credentials (multiple files allowed)
+              </p>
+              {signupData.certificates && signupData.certificates.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {signupData.certificates.map((file, index) => (
+                    <div key={index} className="text-sm text-gray-600 flex items-center">
+                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                      {file.name}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -727,11 +1022,34 @@ const SignupFlow = () => {
             Back
           </Button>
           <Button 
-            onClick={() => setCurrentStep(5)} 
+            onClick={() => {
+              // For experts who uploaded certificates, skip step 5 and complete registration
+              if (signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0) {
+                completeRegistration();
+              } else {
+                setCurrentStep(5);
+              }
+            }} 
             className="flex-1"
+            disabled={isLoading}
           >
-            Continue
-            <ArrowRight className="ml-2 h-4 w-4" />
+            {isLoading ? (
+              <>
+                <span className="animate-spin mr-2">⏳</span>
+                Completing...
+              </>
+            ) : (
+              <>
+                {signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0 
+                  ? 'Complete Registration' 
+                  : 'Continue'
+                }
+                {signupData.role === 'expert' && signupData.certificates && signupData.certificates.length > 0 
+                  ? <CheckCircle className="ml-2 h-4 w-4" />
+                  : <ArrowRight className="ml-2 h-4 w-4" />
+                }
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -754,38 +1072,73 @@ const SignupFlow = () => {
       </div>
       
       {signupData.role !== 'adopter' && (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-2">Drop files here or click to browse</p>
+        <>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Accepted formats:</strong> PDF, JPG, PNG, DOC, DOCX
+            </p>
+            <p className="text-sm text-blue-800 mt-1">
+              <strong>Maximum size:</strong> 10MB per file
+            </p>
+          </div>
+          
           <input
             type="file"
             multiple
-            accept=".pdf,.jpg,.jpeg,.png"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             onChange={(e) => {
               const files = Array.from(e.target.files || []);
-              updateSignupData('documents', files);
+              if (files.length > 0) {
+                updateSignupData('documents', files);
+                toast({
+                  title: 'Files Selected',
+                  description: `${files.length} file(s) selected for upload`,
+                });
+              }
             }}
             className="hidden"
-            id="documents"
+            id="document-upload-input"
           />
-          <label htmlFor="documents">
-            <Button variant="outline" className="cursor-pointer">
+          <label 
+            htmlFor="document-upload-input"
+            className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer"
+          >
+            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-600 mb-3">Drop files here or click to browse</p>
+            <div className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+              <Upload className="mr-2 h-4 w-4" />
               Choose Files
-            </Button>
+            </div>
           </label>
           
           {signupData.documents && signupData.documents.length > 0 && (
-            <div className="mt-4 text-left">
-              <p className="font-medium mb-2">Selected files:</p>
-              {signupData.documents.map((file, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <span className="text-sm">{file.name}</span>
-                  <Badge variant="secondary">{(file.size / 1024 / 1024).toFixed(2)} MB</Badge>
-                </div>
-              ))}
+            <div className="mt-4">
+              <p className="font-medium mb-3 text-sm text-gray-700">
+                Selected files ({signupData.documents.length}):
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {signupData.documents.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-blue-100 p-2 rounded">
+                        <Upload className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{file.name}</span>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Ready
+                    </Badge>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>
+        </>
       )}
       
       <div className="flex space-x-2">
@@ -793,6 +1146,7 @@ const SignupFlow = () => {
           variant="outline" 
           onClick={() => setCurrentStep(4)}
           className="flex-1"
+          type="button"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
@@ -801,9 +1155,21 @@ const SignupFlow = () => {
           onClick={completeRegistration} 
           className="flex-1"
           disabled={isLoading}
+          type="button"
         >
-          {isLoading ? 'Creating Account...' : 'Complete Registration'}
-          <CheckCircle className="ml-2 h-4 w-4" />
+          {isLoading ? (
+            <>
+              <span className="animate-spin mr-2">⏳</span>
+              {signupData.documents && signupData.documents.length > 0 
+                ? 'Uploading Documents...' 
+                : 'Creating Account...'}
+            </>
+          ) : (
+            <>
+              Complete Registration
+              <CheckCircle className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -815,7 +1181,7 @@ const SignupFlow = () => {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
-            {steps.slice(0, signupData.role === 'adopter' ? 4 : 5).map((step, index) => (
+            {steps.slice(0, getTotalSteps()).map((step, index) => (
               <div key={step.number} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
                   ${currentStep >= step.number 
@@ -824,7 +1190,7 @@ const SignupFlow = () => {
                   }`}>
                   {currentStep > step.number ? <CheckCircle className="h-4 w-4" /> : step.number}
                 </div>
-                {index < (signupData.role === 'adopter' ? 3 : 4) && (
+                {index < getMaxConnectorIndex() && (
                   <div className={`w-12 h-0.5 mx-2 ${
                     currentStep > step.number ? 'bg-blue-600' : 'bg-gray-200'
                   }`} />

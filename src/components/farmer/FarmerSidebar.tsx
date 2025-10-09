@@ -10,7 +10,8 @@ import {
   Calendar, 
   BookOpen, 
   BarChart3, 
-  Settings 
+  Settings,
+  TrendingUp
 } from 'lucide-react';
 import {
   Sidebar,
@@ -34,6 +35,7 @@ const farmerMenuItems = [
   { title: 'Wallet', url: '/farmer/wallet', icon: Wallet },
   { title: 'Farm Visits', url: '/farmer/visits', icon: Calendar },
   { title: 'Knowledge Hub', url: '/farmer/knowledge', icon: BookOpen },
+  { title: 'Farmer Stories', url: '/farmer/stories', icon: TrendingUp },
   { title: 'Reports', url: '/farmer/reports', icon: BarChart3 },
   { title: 'Settings', url: '/farmer/settings', icon: Settings },
 ];

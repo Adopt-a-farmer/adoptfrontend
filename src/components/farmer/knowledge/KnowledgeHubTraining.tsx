@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { knowledgeService, KnowledgeArticle, FarmingCalendar, FarmingVideo } from '@/services/knowledge';
-import { BookOpen, Calendar, Clock, User, Heart, Eye, Search, Filter, Youtube, ExternalLink } from 'lucide-react';
+import { BookOpen, Calendar, Clock, User, Heart, Eye, Search, Filter, Youtube, ExternalLink, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import FarmerTestimonials from './FarmerTestimonials';
 
 const KnowledgeHubTraining = () => {
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
@@ -210,10 +211,11 @@ const KnowledgeHubTraining = () => {
       </Card>
 
       <Tabs defaultValue="articles" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="articles">Articles</TabsTrigger>
           <TabsTrigger value="calendar">Farming Calendar</TabsTrigger>
           <TabsTrigger value="videos">Farming Videos</TabsTrigger>
+          <TabsTrigger value="testimonials">Success Stories</TabsTrigger>
         </TabsList>
 
         <TabsContent value="articles" className="space-y-4">
@@ -497,6 +499,10 @@ const KnowledgeHubTraining = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="testimonials" className="space-y-4">
+          <FarmerTestimonials />
         </TabsContent>
       </Tabs>
     </div>

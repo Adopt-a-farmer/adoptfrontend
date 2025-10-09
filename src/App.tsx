@@ -26,6 +26,8 @@ import FarmerDashboard from "./pages/farmer/FarmerDashboard";
 
 // Expert pages  
 import ExpertDashboard from "./pages/expert/ExpertDashboard";
+import ExpertList from "./components/expert/ExpertList";
+import ExpertDetail from "./pages/expert/ExpertDetail";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -34,6 +36,7 @@ import SignupFlow from "./pages/auth/SignupFlow";
 import FarmerInvite from "./pages/auth/FarmerInvite";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import VerifyEmailOTP from "./pages/auth/VerifyEmailOTP";
 
 // Admin pages
 import AdminLayout from "./components/admin/AdminLayout";
@@ -47,6 +50,8 @@ import AnalyticsManagement from "./pages/admin/AnalyticsManagement";
 import SettingsManagement from "./pages/admin/SettingsManagement";
 import VerificationManagement from "./pages/admin/VerificationManagement";
 import ExpertsManagement from "./pages/admin/ExpertsManagement";
+import DocumentVerification from "./pages/admin/DocumentVerification";
+import AdoptionManagement from "./pages/admin/AdoptionManagement";
 
 // Adopter pages
 import AdopterDashboard from "./pages/adopter/AdopterDashboard";
@@ -90,9 +95,14 @@ const AppContent = () => {
       {/* Auth Routes */}
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/register" element={<SignupFlow />} />
+      <Route path="/auth/verify-email" element={<VerifyEmailOTP />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
       <Route path="/auth/farmer-invite/:token" element={<FarmerInvite />} />
+      
+      {/* Expert Directory (Public) */}
+      <Route path="/experts" element={<ExpertList />} />
+      <Route path="/experts/:id" element={<ExpertDetail />} />
 
       {/* Redirect /dashboard/farmers to /admin/farmers for consistency */}
       <Route 
@@ -114,7 +124,9 @@ const AppContent = () => {
         <Route path="adopters" element={<AdoptersManagement />} />
         <Route path="experts" element={<ExpertsManagement />} />
         <Route path="verification" element={<VerificationManagement />} />
+        <Route path="documents" element={<DocumentVerification />} />
         <Route path="adoptions" element={<AdoptionsManagement />} />
+        <Route path="adoptions/manage" element={<AdoptionManagement />} />
         <Route path="payments" element={<PaymentsManagement />} />
         <Route path="suppliers" element={<SuppliersManagement />} />
         <Route path="analytics" element={<AnalyticsManagement />} />

@@ -21,17 +21,21 @@ import {
   Filter,
   UserCheck,
   Building,
-  Award
+  Award,
+  Eye
 } from 'lucide-react';
 import { adminService, VerificationUser, VerificationStats } from '@/services/admin';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
+import UserDetailModal from '@/components/admin/UserDetailModal';
 
 const VerificationManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -231,39 +235,53 @@ const VerificationManagement = () => {
           </div>
         )}
 
-        {user.verificationStatus === 'pending' && (
-          <div className="flex space-x-2">
-            <Button
-              onClick={() => handleVerifyUser(user._id, user.type, 'verified')}
-              disabled={verifyMutation.isPending}
-              className="flex-1 bg-green-600 hover:bg-green-700"
-            >
-              {verifyMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
-              )}
-              Approve
-            </Button>
-            <Button
-              onClick={() => handleVerifyUser(user._id, user.type, 'rejected')}
-              disabled={verifyMutation.isPending}
-              variant="destructive"
-              className="flex-1"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Reject
-            </Button>
-          </div>
-        )}
+        <div className="space-y-2">
+          <Button
+            onClick={() => {
+              setSelectedUserId(user.user?._id || user._id);
+              setShowDetailModal(true);
+            }}
+            variant="outline"
+            className="w-full"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            View Full Details
+          </Button>
 
-        {user.verificationStatus !== 'pending' && (
-          <div className="text-center py-2">
-            <span className="text-sm text-muted-foreground">
-              {user.verificationStatus === 'verified' ? 'Already verified' : 'Verification rejected'}
-            </span>
-          </div>
-        )}
+          {user.verificationStatus === 'pending' && (
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => handleVerifyUser(user._id, user.type, 'verified')}
+                disabled={verifyMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {verifyMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                Approve
+              </Button>
+              <Button
+                onClick={() => handleVerifyUser(user._id, user.type, 'rejected')}
+                disabled={verifyMutation.isPending}
+                variant="destructive"
+                className="flex-1"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject
+              </Button>
+            </div>
+          )}
+
+          {user.verificationStatus !== 'pending' && (
+            <div className="text-center py-2">
+              <span className="text-sm text-muted-foreground">
+                {user.verificationStatus === 'verified' ? 'Already verified' : 'Verification rejected'}
+              </span>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -294,6 +312,19 @@ const VerificationManagement = () => {
           </Button>
         </div>
       </div>
+
+      {/* User Detail Modal */}
+      <UserDetailModal
+        userId={selectedUserId}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedUserId(null);
+        }}
+        onActionComplete={() => {
+          refetch();
+        }}
+      />
 
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

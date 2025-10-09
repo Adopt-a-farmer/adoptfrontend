@@ -12,6 +12,7 @@ import FarmVisitPlanner from '@/components/adopter/visits/FarmVisitPlanner';
 import CrowdfundingHub from '@/components/adopter/crowdfunding/CrowdfundingHub';
 import ProfileSettings from '@/components/adopter/profile/ProfileSettings';
 import AdopterMentoring from '@/components/adopter/mentoring/AdopterMentoring';
+import AdopterBlockchainDashboard from '@/components/adopter/blockchain/AdopterBlockchainDashboard';
 
 const AdopterDashboard = () => {
   return (
@@ -26,6 +27,7 @@ const AdopterDashboard = () => {
         <Route path="knowledge" element={<KnowledgeHub />} />
         <Route path="visits" element={<FarmVisitPlanner />} />
         <Route path="crowdfunding" element={<CrowdfundingHub />} />
+        <Route path="blockchain" element={<AdopterBlockchainDashboard />} />
         <Route path="profile" element={<ProfileSettings />} />
       </Routes>
     </AdopterLayout>

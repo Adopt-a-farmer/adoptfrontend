@@ -176,13 +176,15 @@ export const authService = {
     return apiCall('POST', '/auth/verify-otp', { email, otp, token });
   },
 
+  // Resend OTP
+  resendOTP: async (email: string, token: string): Promise<{ message: string; token: string }> => {
+    return apiCall('POST', '/auth/resend-otp', { email, token });
+  },
+
   // Complete signup after OTP verification
   completeSignup: async (formData: FormData): Promise<AuthResponse> => {
-    return apiCall('POST', '/auth/complete-signup', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // Don't set Content-Type header, let axios set it automatically with boundary
+    return apiCall('POST', '/auth/complete-signup', formData);
   },
   
   // Get stored refresh token

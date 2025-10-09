@@ -39,11 +39,33 @@ const FarmerCard: React.FC<FarmerCardProps> = ({
   const establishedYears = new Date().getFullYear() - (farmer.establishedYear || new Date().getFullYear());
 
   const handleViewProfile = () => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth/login', { state: { from: `/farmers/${farmer._id}` } });
+      return;
+    }
     navigate(`/farmers/${farmer._id}`);
   };
 
   const handleAdoptFarm = () => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth/login', { state: { from: `/farmers/${farmer._id}/adopt` } });
+      return;
+    }
     navigate(`/farmers/${farmer._id}/adopt`);
+  };
+  
+  const handleContactFarmer = () => {
+    // Redirect to login for contact farmer
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth/login', { state: { from: `/farmers/${farmer._id}/contact` } });
+      return;
+    }
+    navigate(`/farmers/${farmer._id}/contact`);
   };
 
   return (
@@ -203,23 +225,33 @@ const FarmerCard: React.FC<FarmerCardProps> = ({
 
         {/* Action Buttons */}
         {showActions && (
-          <div className="flex space-x-2 pt-2">
+          <div className="space-y-2 pt-2">
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleViewProfile}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View Profile
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleAdoptFarm}
+                className="flex-1"
+              >
+                <Heart className="h-4 w-4 mr-1" />
+                Adopt Farm
+              </Button>
+            </div>
             <Button 
-              variant="outline" 
+              variant="secondary" 
               size="sm" 
-              onClick={handleViewProfile}
-              className="flex-1"
+              onClick={handleContactFarmer}
+              className="w-full"
             >
-              <Eye className="h-4 w-4 mr-1" />
-              View Profile
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleAdoptFarm}
-              className="flex-1"
-            >
-              <Heart className="h-4 w-4 mr-1" />
-              Adopt Farm
+              Contact Farmer
             </Button>
           </div>
         )}

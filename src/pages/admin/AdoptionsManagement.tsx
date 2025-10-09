@@ -9,13 +9,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Search, Users, DollarSign, UserPlus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/mock/client';
+import CreateAdoptionModal from '@/components/admin/CreateAdoptionModal';
+
+interface Adoption {
+  id: string;
+  farmer_id: string;
+  adopter_id: string;
+  status: string;
+  monthly_contribution: number;
+  total_contributed: number;
+  adoption_date: string;
+  farmers: {
+    id: string;
+    name: string;
+    location: string;
+  };
+  profiles: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+}
 
 const AdoptionsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [farmerFilter, setFarmerFilter] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Fetch all adoptions with farmer and adopter details
-  const fetchAdoptions = async () => {
+  const fetchAdoptions = async (): Promise<Adoption[]> => {
     const { data, error } = await supabase
       .from('farmer_adoptions')
       .select(`
@@ -26,7 +48,7 @@ const AdoptionsManagement = () => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Adoption[];
   };
 
   const { data: adoptions = [], isLoading } = useQuery({
@@ -37,14 +59,14 @@ const AdoptionsManagement = () => {
   // Fetch farmers for filter dropdown
   const { data: farmers = [] } = useQuery({
     queryKey: ['farmers-for-filter'],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ id: string; name: string }[]> => {
       const { data, error } = await supabase
         .from('farmers')
         .select('id, name')
         .order('name');
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as { id: string; name: string }[];
     },
   });
 
@@ -73,11 +95,21 @@ const AdoptionsManagement = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Adoptions Management</h1>
-        <Button>
+        <Button onClick={() => setShowCreateModal(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           Create Adoption
         </Button>
       </div>
+
+      {/* Create Adoption Modal */}
+      <CreateAdoptionModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          // Refresh adoptions list
+          window.location.reload();
+        }}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
