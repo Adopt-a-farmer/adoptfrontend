@@ -7,7 +7,6 @@ const BlockchainFeatures = () => {
   const features = [
     {
       icon: <Link2 className="h-12 w-12 text-white" />,
-      emoji: "🌾",
       title: "Farm-to-Fork Traceability with Blockchain",
       description: "Innovation meets transparency. Our Blockchain-powered traceability system transforms the agricultural value chain by securely tracking every product from the farm to your fork. Each transaction is verified on an immutable ledger, ensuring authenticity, quality, and trust. With real-time data and digital transparency, we're redefining how the world connects to its food.",
       bgImage: "/farmers1.jpg",
@@ -15,7 +14,6 @@ const BlockchainFeatures = () => {
     },
     {
       icon: <Coins className="h-12 w-12 text-white" />,
-      emoji: "🌍",
       title: "Tokenized Carbon Credit Rewards for Sustainable Farming",
       description: "We're revolutionizing climate-smart agriculture through tokenized carbon credit rewards that empower farmers to earn while protecting the planet. Every sustainable action — from carbon reduction to regenerative practices — is recorded and rewarded on the Blockchain. Small-scale and large-scale farmers alike gain new revenue streams through verifiable, tradeable carbon assets. Sustainability has never been this innovative — or this rewarding.",
       bgImage: "/farmers2.jpg",
@@ -23,7 +21,6 @@ const BlockchainFeatures = () => {
     },
     {
       icon: <Award className="h-12 w-12 text-white" />,
-      emoji: "💎",
       title: "Smart Tokenized Incentives and Rewards",
       description: "Our next-generation rewards system uses Blockchain tokenization to drive performance, transparency, and innovation across agriculture. Farmers and stakeholders earn digital tokens for verified milestones, from production quality to environmental impact. These tokens hold real-world value, creating a borderless ecosystem where excellence and sustainability are always recognized. The future of agricultural motivation is decentralized.",
       bgImage: "/lovable-uploads/a76a1500-f6bb-4afb-a610-80f8ea83f1fe.png",
@@ -31,7 +28,6 @@ const BlockchainFeatures = () => {
     },
     {
       icon: <Zap className="h-12 w-12 text-white" />,
-      emoji: "⚡",
       title: "Seamless Blockchain-Powered Payments",
       description: "We're making payments faster, smarter, and more secure. Blockchain-powered payments enable instant, transparent transactions between farmers, suppliers, and buyers — eliminating intermediaries and reducing costs. Every transfer is traceable and tamper-proof, promoting financial inclusion and trust across the agricultural economy. Powering the future of digital agriculture, one block at a time.",
       bgImage: "/farmers1.jpg",
@@ -73,12 +69,11 @@ const BlockchainFeatures = () => {
 
               {/* Content */}
               <div className="relative z-10 p-8 md:p-10 text-white min-h-[450px] flex flex-col">
-                {/* Icon and Emoji */}
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 group-hover:bg-white/30 transition-all duration-300">
+                {/* Icon */}
+                <div className="mb-6">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 group-hover:bg-white/30 transition-all duration-300 inline-block">
                     {feature.icon}
                   </div>
-                  <span className="text-5xl">{feature.emoji}</span>
                 </div>
 
                 {/* Title */}
@@ -127,16 +122,15 @@ const BlockchainFeatures = () => {
         {/* Bottom Stats Section */}
         <div className="mt-20 grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {[
-            { label: "Blockchain Transactions", value: "10,000+", icon: "🔗" },
-            { label: "Carbon Credits Issued", value: "5,000+", icon: "🌱" },
-            { label: "Tokenized Rewards", value: "$50K+", icon: "💰" },
-            { label: "Secure Payments", value: "99.9%", icon: "🔒" }
+            { label: "Blockchain Transactions", value: "10,000+" },
+            { label: "Carbon Credits Issued", value: "5,000+" },
+            { label: "Tokenized Rewards", value: "$50K+" },
+            { label: "Secure Payments", value: "99.9%" }
           ].map((stat, index) => (
             <div 
               key={index}
               className="bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300"
             >
-              <div className="text-4xl mb-3">{stat.icon}</div>
               <div className="text-3xl font-bold text-farmer-primary mb-2">{stat.value}</div>
               <div className="text-sm text-gray-600 font-medium">{stat.label}</div>
             </div>
