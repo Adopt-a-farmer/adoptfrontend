@@ -367,10 +367,11 @@ const FarmVisitScheduler = () => {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="requests">Visit Requests</TabsTrigger>
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-          <TabsTrigger value="availability">Availability</TabsTrigger>
+          <TabsTrigger value="availability">Set Availability</TabsTrigger>
+          <TabsTrigger value="my-availability">My Schedule</TabsTrigger>
           <TabsTrigger value="history">Visit History</TabsTrigger>
         </TabsList>
 
@@ -401,6 +402,10 @@ const FarmVisitScheduler = () => {
             onAddTimeSlots={(date, timeSlots) => addTimeSlotMutation.mutate({ date, timeSlots })}
             isAdding={addTimeSlotMutation.isPending}
           />
+        </TabsContent>
+
+        <TabsContent value="my-availability" className="space-y-6">
+          <MyAvailabilityScheduleTab />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
@@ -761,6 +766,196 @@ const AvailabilityTab = ({
           </Button>
         </CardContent>
       </Card>
+    </div>
+  );
+};
+
+// My Availability Schedule Tab Component
+const MyAvailabilityScheduleTab = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+
+  // Calculate date range for current month
+  const startOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+  const endOfMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+  
+  const startIso = format(startOfMonth, 'yyyy-MM-dd');
+  const endIso = format(endOfMonth, 'yyyy-MM-dd');
+
+  // Fetch all availability for the month
+  const { data: allAvailability, isLoading } = useQuery({
+    queryKey: ['all-availability', startIso, endIso],
+    queryFn: async () => {
+      const res = await visitService.getMyAvailability({ start: startIso, end: endIso });
+      return res.data.availability as Array<{ _id: string; date: string; timeSlots: string[]; farmer: string }>;
+    },
+  });
+
+  // Delete availability mutation
+  const deleteAvailabilityMutation = useMutation({
+    mutationFn: async (date: string) => {
+      return await apiCall('POST', '/visits/availability', { date, time_slots: [] });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Availability removed successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ['all-availability'] });
+      queryClient.invalidateQueries({ queryKey: ['visit-availability'] });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: "Error",
+        description: (error as Error)?.message || "Failed to remove availability",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handlePreviousMonth = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1));
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading your availability...</div>;
+  }
+
+  const sortedAvailability = allAvailability?.sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  ) || [];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>My Availability Schedule</CardTitle>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={handlePreviousMonth}>
+                Previous
+              </Button>
+              <span className="text-sm font-medium px-4">
+                {format(selectedMonth, 'MMMM yyyy')}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleNextMonth}>
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sortedAvailability.length > 0 ? (
+            <div className="space-y-4">
+              {sortedAvailability.map((availability) => (
+                <Card key={availability._id} className="border border-green-200 bg-green-50/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <CalendarIcon className="h-5 w-5 text-farmer-primary" />
+                          <h4 className="font-semibold text-lg">
+                            {format(new Date(availability.date), 'EEEE, MMMM d, yyyy')}
+                          </h4>
+                        </div>
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            {availability.timeSlots.length} time slot{availability.timeSlots.length !== 1 ? 's' : ''} available
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {availability.timeSlots.map((slot, index) => (
+                            <Badge key={index} className="bg-farmer-primary text-white">
+                              {slot}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteAvailabilityMutation.mutate(availability.date)}
+                        disabled={deleteAvailabilityMutation.isPending}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No availability set</h3>
+              <p className="text-gray-500 mb-4">
+                You haven't set any available time slots for {format(selectedMonth, 'MMMM yyyy')} yet.
+              </p>
+              <Button 
+                onClick={() => {
+                  const tabsList = document.querySelector('[role="tablist"]');
+                  const availabilityTab = tabsList?.querySelector('[value="availability"]') as HTMLElement;
+                  availabilityTab?.click();
+                }}
+                className="bg-farmer-primary hover:bg-farmer-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Set Your Availability
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Summary Stats */}
+      {sortedAvailability.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <CalendarIcon className="h-8 w-8 text-farmer-primary" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500">Total Days</p>
+                  <p className="text-2xl font-bold">{sortedAvailability.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-blue-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500">Total Slots</p>
+                  <p className="text-2xl font-bold">
+                    {sortedAvailability.reduce((sum, a) => sum + a.timeSlots.length, 0)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-500">Next Available</p>
+                  <p className="text-sm font-bold">
+                    {sortedAvailability[0] ? format(new Date(sortedAvailability[0].date), 'MMM d') : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

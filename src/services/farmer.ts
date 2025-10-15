@@ -437,7 +437,8 @@ export const farmerService = {
     // Farm Updates Management
   async getFarmUpdates(params?: string): Promise<{ updates: FarmUpdate[], pagination: { page: number; limit: number; total: number; pages: number } }> {
     const queryString = params ? `?${params}` : '';
-    return apiCall('GET', `/farm-updates${queryString}`);
+    const response = await apiCall<{ success: boolean; data: { updates: FarmUpdate[], pagination: { page: number; limit: number; total: number; pages: number } } }>('GET', `/farm-updates${queryString}`);
+    return response.data;
   },
 
   async createFarmUpdate(updateData: Partial<FarmUpdate>): Promise<{ update: FarmUpdate }> {
@@ -464,7 +465,8 @@ export const farmerService = {
   },
 
   async getMediaLibrary(): Promise<MediaFile[]> {
-    return apiCall('GET', '/farm-updates/media');
+    const response = await apiCall<{ success: boolean; data: { media: MediaFile[] } }>('GET', '/farm-updates/media');
+    return response.data.media;
   },
 
   async deleteMedia(id: string): Promise<void> {

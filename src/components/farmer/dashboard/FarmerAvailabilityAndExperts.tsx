@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface Expert {
   _id: string;
@@ -42,7 +42,7 @@ const FarmerAvailabilityAndExperts = () => {
     queryKey: ['farmerProfile'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/farmers/profile`, {
+      const response = await axios.get(`${API_URL}/api/farmers/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsAvailable(response.data.data?.farmer?.isAvailable || false);
@@ -55,7 +55,7 @@ const FarmerAvailabilityAndExperts = () => {
     queryKey: ['experts'],
     queryFn: async () => {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/experts?isAvailable=true&limit=6`, {
+      const response = await axios.get(`${API_URL}/api/farmers/experts?isAvailable=true&limit=6`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -69,7 +69,7 @@ const FarmerAvailabilityAndExperts = () => {
     mutationFn: async (available: boolean) => {
       const token = localStorage.getItem('token');
       const response = await axios.patch(
-        `${API_URL}/farmers/profile/availability`,
+        `${API_URL}/api/farmers/profile/availability`,
         { isAvailable: available },
         { headers: { Authorization: `Bearer ${token}` } }
       );
