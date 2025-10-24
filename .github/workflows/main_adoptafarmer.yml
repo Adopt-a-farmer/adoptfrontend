@@ -33,13 +33,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          # Upload dist folder, server.js, web.config, and package files
+          # Upload dist folder, server.js, web.config, node_modules, and package files
           path: |
             dist/
             server.js
             web.config
             package.json
             package-lock.json
+            node_modules/
             .deployment
             ecosystem.config.js
 
