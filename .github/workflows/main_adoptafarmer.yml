@@ -69,4 +69,18 @@ jobs:
           slot-name: 'Production'
           # Deploy the entire app including server.js
           package: .
+      
+      - name: Set startup command
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'adoptafarmer'
+          slot-name: 'Production'
+          app-settings-json: |
+            [
+              {
+                "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                "value": "false"
+              }
+            ]
+          startup-command: 'node server.js'
           
