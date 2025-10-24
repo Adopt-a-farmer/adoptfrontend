@@ -40,6 +40,8 @@ jobs:
             web.config
             package.json
             package-lock.json
+            .deployment
+            ecosystem.config.js
 
   deploy:
     runs-on: ubuntu-latest
@@ -69,9 +71,5 @@ jobs:
           slot-name: 'Production'
           # Deploy the entire app including server.js
           package: .
-      
-      - name: Set startup command
-        run: |
-          az webapp config set --name adoptafarmer --resource-group adoptafarmer_group --startup-file "node server.js"
-          az webapp config appsettings set --name adoptafarmer --resource-group adoptafarmer_group --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+          startup-command: 'npm start'
           
