@@ -33,8 +33,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          # Upload only the production build output so Azure Web App serves static files
-          path: dist
+          # Upload dist folder, server.js, web.config, and package files
+          path: |
+            dist/
+            server.js
+            web.config
+            package.json
+            package-lock.json
 
   deploy:
     runs-on: ubuntu-latest
@@ -48,8 +53,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
-          # extract files into ./dist so the deploy action can target the dist folder
-          path: dist
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -64,6 +67,6 @@ jobs:
         with:
           app-name: 'adoptafarmer'
           slot-name: 'Production'
-          # Deploy the static site build output
-          package: ./dist
+          # Deploy the entire app including server.js
+          package: .
           
