@@ -4,17 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { expertService, ExpertConversation } from '@/services/expert';
+import { farmerService, FarmerProfile } from '@/services/farmer';
 import { apiCall } from '@/services/api';
 import { 
   MessageCircle, 
   Search, 
   Send,
   Users,
-  Clock
+  Clock,
+  Plus,
+  MapPin,
+  Leaf
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 
 interface Message {
   _id: string;
@@ -40,13 +47,33 @@ interface Message {
 const ExpertMessaging = () => {
   const [conversations, setConversations] = useState<ExpertConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ExpertConversation | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<FarmerProfile | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [farmerSearchQuery, setFarmerSearchQuery] = useState('');
+  const [showNewConversationDialog, setShowNewConversationDialog] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch all farmers for new conversation
+  const { data: farmersResponse, isLoading: farmersLoading } = useQuery({
+    queryKey: ['all-farmers', farmerSearchQuery],
+    queryFn: async () => {
+      const params: Record<string, string | number | boolean> = {
+        page: 1,
+        limit: 50,
+        isActive: true
+      };
+      if (farmerSearchQuery) params.search = farmerSearchQuery;
+      return await farmerService.getFarmers(params);
+    },
+    enabled: showNewConversationDialog,
+  });
+
+  const allFarmers = farmersResponse?.data?.farmers || [];
 
   const fetchConversations = React.useCallback(async () => {
     try {
@@ -98,6 +125,7 @@ const ExpertMessaging = () => {
 
   const handleConversationSelect = (conversation: ExpertConversation) => {
     setSelectedConversation(conversation);
+    setSelectedFarmer(null);
     fetchMessages(conversation.conversationId);
     
     // Mark messages as read
@@ -114,21 +142,66 @@ const ExpertMessaging = () => {
     }
   };
 
+  // Handle starting a new conversation with a farmer
+  const handleStartNewConversation = async (farmer: FarmerProfile) => {
+    setSelectedFarmer(farmer);
+    setSelectedConversation(null);
+    setShowNewConversationDialog(false);
+    setMessages([]);
+    
+    // Check if there's an existing conversation with this farmer
+    const existingConv = conversations.find(
+      conv => conv.farmer?._id === farmer.user?._id || conv.farmer?._id === farmer._id
+    );
+    
+    if (existingConv) {
+      handleConversationSelect(existingConv);
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim()) return;
+    
+    // Determine recipient - either from existing conversation or new farmer selection
+    const recipientId = selectedConversation?.farmer?._id || selectedFarmer?.user?._id || selectedFarmer?._id;
+    
+    if (!recipientId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a farmer to message',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       await apiCall('POST', '/messages/send', {
-        recipient: selectedConversation.farmer._id,
+        recipient: recipientId,
         content: { text: newMessage.trim() },
         messageType: 'text'
       });
 
       setNewMessage('');
-      // Refresh messages
-      fetchMessages(selectedConversation.conversationId);
+      
+      // If we have a conversation, refresh messages
+      if (selectedConversation?.conversationId) {
+        fetchMessages(selectedConversation.conversationId);
+      } else if (selectedFarmer) {
+        // For new conversation, create conversation ID and fetch messages
+        const convId = [user?._id, recipientId].sort().join('_');
+        fetchMessages(convId);
+      }
+      
       // Refresh conversations to update last message
       fetchConversations();
+      
+      // Clear selected farmer after first message (it becomes a conversation)
+      if (selectedFarmer && !selectedConversation) {
+        toast({
+          title: 'Message Sent',
+          description: 'Your conversation has started!',
+        });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -163,10 +236,21 @@ const ExpertMessaging = () => {
   };
 
   const filteredConversations = conversations.filter(conversation =>
-    conversation.farmer.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conversation.farmer.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (conversation.farmer.farmerProfile?.farmName.toLowerCase().includes(searchQuery.toLowerCase()))
+    conversation.farmer?.firstName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+    conversation.farmer?.lastName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+    conversation.farmer?.farmerProfile?.farmName?.toLowerCase()?.includes(searchQuery.toLowerCase())
   );
+
+  // Filter farmers for new conversation dialog
+  const filteredFarmers = allFarmers.filter(farmer => {
+    const searchLower = farmerSearchQuery.toLowerCase();
+    return (
+      farmer.farmName?.toLowerCase()?.includes(searchLower) ||
+      farmer.user?.firstName?.toLowerCase()?.includes(searchLower) ||
+      farmer.user?.lastName?.toLowerCase()?.includes(searchLower) ||
+      farmer.location?.county?.toLowerCase()?.includes(searchLower)
+    );
+  });
 
   if (loading) {
     return (
@@ -178,9 +262,84 @@ const ExpertMessaging = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Messages</h2>
-        <p className="text-muted-foreground">Chat with farmers you're mentoring</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Messages</h2>
+          <p className="text-muted-foreground">Chat with farmers</p>
+        </div>
+        
+        {/* New Conversation Button */}
+        <Dialog open={showNewConversationDialog} onOpenChange={setShowNewConversationDialog}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Conversation
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>Start New Conversation</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search farmers by name, farm, or location..."
+                  value={farmerSearchQuery}
+                  onChange={(e) => setFarmerSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <div className="max-h-[400px] overflow-y-auto space-y-2">
+                {farmersLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                ) : filteredFarmers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">No farmers found</p>
+                  </div>
+                ) : (
+                  filteredFarmers.map((farmer) => (
+                    <div
+                      key={farmer._id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleStartNewConversation(farmer)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={farmer.farmImages?.[0]} />
+                          <AvatarFallback>
+                            {farmer.user?.firstName?.[0] || 'F'}{farmer.user?.lastName?.[0] || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {farmer.user?.firstName || 'Unknown'} {farmer.user?.lastName || ''}
+                          </p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Leaf className="h-3 w-3" />
+                            {farmer.farmName || 'Unnamed Farm'}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {farmer.location?.subCounty || 'N/A'}, {farmer.location?.county || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        Message
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
@@ -224,16 +383,16 @@ const ExpertMessaging = () => {
                     >
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={conversation.farmer.avatar} />
+                          <AvatarImage src={conversation.farmer?.avatar} />
                           <AvatarFallback>
-                            {conversation.farmer.firstName[0]}{conversation.farmer.lastName[0]}
+                            {conversation.farmer?.firstName?.[0] || 'F'}{conversation.farmer?.lastName?.[0] || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
                             <p className="font-medium text-sm truncate">
-                              {conversation.farmer.firstName} {conversation.farmer.lastName}
+                              {conversation.farmer?.firstName || 'Unknown'} {conversation.farmer?.lastName || ''}
                             </p>
                             <div className="flex items-center gap-1">
                               {conversation.unreadCount > 0 && (
@@ -242,17 +401,17 @@ const ExpertMessaging = () => {
                                 </Badge>
                               )}
                               <span className="text-xs text-muted-foreground">
-                                {formatTime(conversation.lastMessage.createdAt)}
+                                {conversation.lastMessage?.createdAt ? formatTime(conversation.lastMessage.createdAt) : 'N/A'}
                               </span>
                             </div>
                           </div>
                           
                           <p className="text-xs text-muted-foreground truncate mb-1">
-                            {conversation.farmer.farmerProfile?.farmName}
+                            {conversation.farmer?.farmerProfile?.farmName || 'Unknown Farm'}
                           </p>
                           
                           <p className="text-xs text-muted-foreground truncate">
-                            {conversation.lastMessage.sender.firstName}: {conversation.lastMessage.content.text}
+                            {conversation.lastMessage?.sender?.firstName || 'Unknown'}: {conversation.lastMessage?.content?.text || 'No message'}
                           </p>
                         </div>
                       </div>
@@ -266,23 +425,27 @@ const ExpertMessaging = () => {
 
         {/* Messages Area */}
         <Card className="lg:col-span-2">
-          {selectedConversation ? (
+          {selectedConversation || selectedFarmer ? (
             <>
               <CardHeader className="border-b">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={selectedConversation.farmer.avatar} />
+                    <AvatarImage src={selectedConversation?.farmer?.avatar || selectedFarmer?.farmImages?.[0]} />
                     <AvatarFallback>
-                      {selectedConversation.farmer.firstName[0]}{selectedConversation.farmer.lastName[0]}
+                      {selectedConversation?.farmer?.firstName?.[0] || selectedFarmer?.user?.firstName?.[0] || 'F'}
+                      {selectedConversation?.farmer?.lastName?.[0] || selectedFarmer?.user?.lastName?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div>
                     <h3 className="font-semibold">
-                      {selectedConversation.farmer.firstName} {selectedConversation.farmer.lastName}
+                      {selectedConversation?.farmer?.firstName || selectedFarmer?.user?.firstName || 'Unknown'}{' '}
+                      {selectedConversation?.farmer?.lastName || selectedFarmer?.user?.lastName || ''}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {selectedConversation.farmer.farmerProfile?.farmName} • {selectedConversation.farmer.farmerProfile?.location.county}
+                      {selectedConversation?.farmer?.farmerProfile?.farmName || selectedFarmer?.farmName || 'Unknown Farm'} 
+                      {' • '}
+                      {selectedConversation?.farmer?.farmerProfile?.location?.county || selectedFarmer?.location?.county || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -307,18 +470,18 @@ const ExpertMessaging = () => {
                     messages.map((message) => (
                       <div
                         key={message._id}
-                        className={`flex ${message.sender._id === user?.id ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${message.sender?._id === user?._id ? 'justify-end' : 'justify-start'}`}
                       >
                         <div className={`max-w-[70%] ${
-                          message.sender._id === user?.id 
+                          message.sender?._id === user?._id 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted'
                         } rounded-lg p-3`}>
-                          <p className="text-sm">{message.content.text}</p>
+                          <p className="text-sm">{message.content?.text || ''}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <Clock className="h-3 w-3 opacity-60" />
                             <span className="text-xs opacity-60">
-                              {formatTime(message.createdAt)}
+                              {message.createdAt ? formatTime(message.createdAt) : 'N/A'}
                             </span>
                           </div>
                         </div>

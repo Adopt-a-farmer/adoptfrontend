@@ -170,7 +170,7 @@ const ArticleDetail = () => {
                   
                   <div className="flex items-center gap-2 mb-4">
                     <Badge variant="secondary">{article.category}</Badge>
-                    {article.tags.map(tag => (
+                    {article.tags?.map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -183,25 +183,25 @@ const ArticleDetail = () => {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      {article.author.avatar_url && (
+                      {article.author?.avatar_url && (
                         <img
                           src={article.author.avatar_url}
-                          alt={`${article.author.firstName} ${article.author.lastName}`}
+                          alt={`${article.author?.firstName || 'Author'} ${article.author?.lastName || ''}`}
                           className="w-10 h-10 rounded-full"
                         />
                       )}
                       <div>
                         <p className="font-medium text-gray-900">
-                          {article.author.firstName} {article.author.lastName}
+                          {article.author?.firstName || 'Unknown'} {article.author?.lastName || 'Author'}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {formatDistanceToNow(new Date(article.createdAt), { addSuffix: true })}
+                            {article.createdAt ? formatDistanceToNow(new Date(article.createdAt), { addSuffix: true }) : 'N/A'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Eye className="h-3 w-3" />
-                            {article.views.toLocaleString()} views
+                            {(article.views || 0).toLocaleString()} views
                           </span>
                         </div>
                       </div>
@@ -247,16 +247,16 @@ const ArticleDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3 mb-4">
-                    {article.author.avatar_url && (
+                    {article.author?.avatar_url && (
                       <img
                         src={article.author.avatar_url}
-                        alt={`${article.author.firstName} ${article.author.lastName}`}
+                        alt={`${article.author?.firstName || 'Author'} ${article.author?.lastName || ''}`}
                         className="w-12 h-12 rounded-full"
                       />
                     )}
                     <div>
                       <p className="font-medium text-gray-900">
-                        {article.author.firstName} {article.author.lastName}
+                        {article.author?.firstName || 'Unknown'} {article.author?.lastName || 'Author'}
                       </p>
                       <p className="text-sm text-gray-600">Agricultural Expert</p>
                     </div>

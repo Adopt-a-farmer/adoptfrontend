@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -23,9 +23,48 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DocumentUpload } from '@/components/ui/DocumentUpload';
+import { AzureMapsLocationPicker } from '@/components/ui/AzureMapsLocationPicker';
+
+// Google OAuth types
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+            auto_select?: boolean;
+          }) => void;
+          renderButton: (
+            element: HTMLElement,
+            config: {
+              theme?: 'outline' | 'filled_blue' | 'filled_black';
+              size?: 'large' | 'medium' | 'small';
+              text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+              shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+              width?: number;
+            }
+          ) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
+interface GoogleUser {
+  sub: string;
+  email: string;
+  email_verified: boolean;
+  name: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+}
 
 // Kenya counties and sub-counties
 const kenyaLocations = {
@@ -93,11 +132,19 @@ const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [selectedCounty, setSelectedCounty] = useState('');
   const [selectedFarmingTypes, setSelectedFarmingTypes] = useState<string[]>([]);
   const [selectedCropTypes, setSelectedCropTypes] = useState<string[]>([]);
   const [selectedFarmingMethods, setSelectedFarmingMethods] = useState<string[]>([]);
   const [profileImage, setProfileImage] = useState<{ url: string; publicId?: string } | null>(null);
+  const [farmCoordinates, setFarmCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [googleUserData, setGoogleUserData] = useState<GoogleUser | null>(null);
+  const [googleSignupStep, setGoogleSignupStep] = useState<'role' | 'details'>('role');
+  const [googleSelectedRole, setGoogleSelectedRole] = useState<'farmer' | 'adopter' | 'expert' | null>(null);
+  const [googlePhoneNumber, setGooglePhoneNumber] = useState('');
+  const [googleFarmCoordinates, setGoogleFarmCoordinates] = useState<{ latitude: number; longitude: number; address?: string } | null>(null);
   const [expertDocuments, setExpertDocuments] = useState<Array<{
     type: string;
     url: string;
@@ -136,6 +183,192 @@ const Register = () => {
   });
 
   const watchedRole = form.watch('role');
+  
+  // Decode JWT token to get user info
+  const decodeJwt = (token: string): GoogleUser | null => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error decoding JWT:', error);
+      return null;
+    }
+  };
+
+  // Handle Google Sign-Up response
+  const handleGoogleResponse = useCallback(async (response: { credential: string }) => {
+    const userData = decodeJwt(response.credential);
+    
+    if (!userData) {
+      toast({
+        title: 'Error',
+        description: 'Failed to decode Google credentials',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setGoogleUserData(userData);
+    setShowRoleSelection(true);
+  }, [toast]);
+
+  // Complete Google signup with selected role
+  const completeGoogleSignup = async () => {
+    if (!googleUserData || !googleSelectedRole) return;
+    
+    // Validate phone number
+    if (!googlePhoneNumber || googlePhoneNumber.length < 10) {
+      toast({
+        title: 'Phone Number Required',
+        description: 'Please enter a valid phone number (at least 10 digits)',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate farm location for farmers
+    if (googleSelectedRole === 'farmer' && !googleFarmCoordinates) {
+      toast({
+        title: 'Farm Location Required',
+        description: 'Please capture your farm location using the GPS button',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsGoogleLoading(true);
+    
+    try {
+      const authResponse = await authService.googleAuth({
+        googleId: googleUserData.sub,
+        email: googleUserData.email,
+        firstName: googleUserData.given_name || googleUserData.name.split(' ')[0],
+        lastName: googleUserData.family_name || googleUserData.name.split(' ').slice(1).join(' ') || '',
+        avatar: googleUserData.picture,
+        role: googleSelectedRole,
+        phoneNumber: googlePhoneNumber,
+        farmLocation: googleSelectedRole === 'farmer' && googleFarmCoordinates ? {
+          coordinates: {
+            latitude: googleFarmCoordinates.latitude,
+            longitude: googleFarmCoordinates.longitude
+          },
+          formattedAddress: googleFarmCoordinates.address
+        } : undefined
+      });
+
+      if (authResponse.success) {
+        const { token, refreshToken, user } = authResponse.data;
+        localStorage.setItem('token', token);
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        toast({
+          title: 'Account Created!',
+          description: 'You have been signed up successfully.',
+        });
+
+        // Redirect based on role
+        if (googleSelectedRole === 'farmer') {
+          navigate('/farmer');
+        } else if (googleSelectedRole === 'expert') {
+          navigate('/expert');
+        } else {
+          navigate('/adopter');
+        }
+
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Google sign-up error:', error);
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast({
+        title: 'Sign-up Failed',
+        description: apiError?.response?.data?.message || 'Google sign-up failed. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGoogleLoading(false);
+      setShowRoleSelection(false);
+      setGoogleSignupStep('role');
+      setGoogleSelectedRole(null);
+      setGooglePhoneNumber('');
+      setGoogleFarmCoordinates(null);
+    }
+  };
+
+  // Handle role selection for Google signup
+  const handleGoogleRoleSelect = (role: 'farmer' | 'adopter' | 'expert') => {
+    setGoogleSelectedRole(role);
+    setGoogleSignupStep('details');
+  };
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    if (!googleClientId) {
+      console.log('Google Client ID not configured - Google Sign-Up disabled');
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleResponse,
+        });
+
+        const buttonContainer = document.getElementById('google-signup-button');
+        if (buttonContainer) {
+          window.google.accounts.id.renderButton(buttonContainer, {
+            theme: 'outline',
+            size: 'large',
+            text: 'signup_with',
+            shape: 'rectangular',
+            width: 400,
+          });
+        }
+      }
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, [handleGoogleResponse]);
+
+  // Handle location selection from Azure Maps picker
+  const handleLocationSelect = (location: {
+    coordinates: { latitude: number; longitude: number };
+    formattedAddress?: string;
+    county?: string;
+    subCounty?: string;
+  }) => {
+    setFarmCoordinates(location.coordinates);
+    
+    // Auto-fill county and subCounty if available from reverse geocoding
+    if (location.county) {
+      form.setValue('county', location.county);
+      setSelectedCounty(location.county);
+    }
+    if (location.subCounty) {
+      form.setValue('subCounty', location.subCounty);
+    }
+  };
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -180,6 +413,10 @@ const Register = () => {
             county: values.county,
             subCounty: values.subCounty,
             village: values.village || '',
+            coordinates: farmCoordinates ? {
+              latitude: farmCoordinates.latitude,
+              longitude: farmCoordinates.longitude
+            } : undefined
           },
           farmSize: {
             value: Number(values.farmSize),
@@ -532,6 +769,15 @@ const Register = () => {
                       )}
                     />
 
+                    {/* Azure Maps Location Picker */}
+                    <div className="border-t pt-4 mt-4">
+                      <AzureMapsLocationPicker
+                        onLocationSelect={handleLocationSelect}
+                        initialCoordinates={farmCoordinates || undefined}
+                        showMapLink={true}
+                      />
+                    </div>
+
                     <div className="grid grid-cols-3 gap-4">
                       <FormField
                         control={form.control}
@@ -788,11 +1034,62 @@ const Register = () => {
               </Button>
             </form>
           </Form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">Or sign up with</span>
+            </div>
+          </div>
+
+          {/* Google Sign-Up Button */}
+          <div className="flex justify-center">
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+              <div id="google-signup-button" className="w-full flex justify-center">
+                {isGoogleLoading && (
+                  <Button variant="outline" className="w-full" disabled>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account with Google...
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                disabled
+                title="Google Sign-Up not configured"
+              >
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Sign up with Google (Not Configured)
+              </Button>
+            )}
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-center text-sm text-gray-500">
             Already have an account?{' '}
-            <Link to="/auth/login" className="text-farmer-primary hover:underline">
+            <Link to="/login" className="text-farmer-primary hover:underline">
               Sign in
             </Link>
           </div>
@@ -801,6 +1098,155 @@ const Register = () => {
           </Link>
         </CardFooter>
       </Card>
+
+      {/* Role Selection Modal for Google Sign-Up */}
+      {showRoleSelection && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            {googleSignupStep === 'role' ? (
+              <>
+                <CardHeader className="text-center">
+                  <CardTitle className="text-xl font-bold">Welcome, {googleUserData?.given_name}!</CardTitle>
+                  <CardDescription>
+                    Choose how you'd like to use Adopt-A-Farmer
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full h-auto p-4 flex flex-col items-start"
+                    onClick={() => handleGoogleRoleSelect('adopter')}
+                    disabled={isGoogleLoading}
+                  >
+                    <span className="font-semibold">Adopter</span>
+                    <span className="text-sm text-muted-foreground">Support farmers and their growth</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full h-auto p-4 flex flex-col items-start"
+                    onClick={() => handleGoogleRoleSelect('farmer')}
+                    disabled={isGoogleLoading}
+                  >
+                    <span className="font-semibold">Farmer</span>
+                    <span className="text-sm text-muted-foreground">Get support for your farm</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full h-auto p-4 flex flex-col items-start"
+                    onClick={() => handleGoogleRoleSelect('expert')}
+                    disabled={isGoogleLoading}
+                  >
+                    <span className="font-semibold">Expert</span>
+                    <span className="text-sm text-muted-foreground">Provide agricultural guidance</span>
+                  </Button>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setShowRoleSelection(false);
+                      setGoogleUserData(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </CardFooter>
+              </>
+            ) : (
+              <>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold">Complete Your Profile</CardTitle>
+                  <CardDescription>
+                    {googleSelectedRole === 'farmer' 
+                      ? 'Please provide your phone number and farm location'
+                      : 'Please provide your phone number to continue'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Phone Number */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="tel"
+                      placeholder="e.g., 0712345678"
+                      value={googlePhoneNumber}
+                      onChange={(e) => setGooglePhoneNumber(e.target.value)}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your phone number is required for account verification and communication
+                    </p>
+                  </div>
+
+                  {/* Farm Location - Only for farmers */}
+                  {googleSelectedRole === 'farmer' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Farm Location <span className="text-red-500">*</span>
+                      </label>
+                      <AzureMapsLocationPicker
+                        onLocationSelect={(locationData) => {
+                          setGoogleFarmCoordinates({
+                            latitude: locationData.coordinates.latitude,
+                            longitude: locationData.coordinates.longitude,
+                            address: locationData.formattedAddress
+                          });
+                        }}
+                        initialCoordinates={googleFarmCoordinates ? {
+                          latitude: googleFarmCoordinates.latitude,
+                          longitude: googleFarmCoordinates.longitude
+                        } : undefined}
+                      />
+                      {googleFarmCoordinates && (
+                        <div className="p-2 bg-green-50 rounded-md border border-green-200">
+                          <p className="text-sm text-green-700">
+                            ✓ Location captured: {googleFarmCoordinates.latitude.toFixed(6)}, {googleFarmCoordinates.longitude.toFixed(6)}
+                          </p>
+                          {googleFarmCoordinates.address && (
+                            <p className="text-xs text-green-600 mt-1">{googleFarmCoordinates.address}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setGoogleSignupStep('role');
+                      setGoogleSelectedRole(null);
+                      setGooglePhoneNumber('');
+                      setGoogleFarmCoordinates(null);
+                    }}
+                    disabled={isGoogleLoading}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    className="flex-1 bg-farmer-primary hover:bg-farmer-dark"
+                    onClick={completeGoogleSignup}
+                    disabled={isGoogleLoading || !googlePhoneNumber || (googleSelectedRole === 'farmer' && !googleFarmCoordinates)}
+                  >
+                    {isGoogleLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      'Complete Sign Up'
+                    )}
+                  </Button>
+                </CardFooter>
+              </>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

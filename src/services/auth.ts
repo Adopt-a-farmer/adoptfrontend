@@ -118,6 +118,41 @@ export const authService = {
     return await apiCall<{ success: boolean; message: string }>('POST', '/auth/forgot-password', { email });
   },
 
+  // Google OAuth sign-in/sign-up
+  googleAuth: async (googleData: {
+    googleId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+    role?: 'farmer' | 'adopter' | 'expert';
+    phoneNumber?: string;
+    farmLocation?: {
+      coordinates: {
+        latitude: number;
+        longitude: number;
+      };
+      formattedAddress?: string;
+    };
+  }): Promise<{ 
+    success: boolean; 
+    message: string; 
+    data: { 
+      user: User; 
+      token: string; 
+      refreshToken?: string;
+      isNewUser?: boolean;
+      requiresPhoneNumber?: boolean;
+    } 
+  }> => {
+    return await apiCall('POST', '/auth/google', googleData);
+  },
+
+  // Update phone number (required after Google sign-in)
+  updatePhoneNumber: async (phone: string): Promise<{ success: boolean; data: { user: User } }> => {
+    return await apiCall('PUT', '/auth/update-phone', { phone });
+  },
+
   // Reset password
   resetPassword: async (token: string, password: string): Promise<{ success: boolean; message: string }> => {
     return await apiCall<{ success: boolean; message: string }>('POST', '/auth/reset-password', { token, password });

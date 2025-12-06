@@ -82,12 +82,12 @@ const InvestorFarmerRelationships = () => {
   };
 
   const filteredRelationships = relationships.filter(relationship =>
-    relationship.farmer.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    relationship.farmer.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    relationship.farmer.farmerProfile.farmName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    relationship.investors.some(inv => 
-      inv.adopter.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inv.adopter.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+    relationship.farmer?.firstName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+    relationship.farmer?.lastName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+    relationship.farmer?.farmerProfile?.farmName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+    relationship.investors?.some(inv => 
+      inv.adopter?.firstName?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+      inv.adopter?.lastName?.toLowerCase()?.includes(searchQuery.toLowerCase())
     )
   );
 
@@ -200,37 +200,37 @@ const InvestorFarmerRelationships = () => {
           </Card>
         ) : (
           filteredRelationships.map((relationship) => (
-            <Card key={relationship.farmer._id} className="hover:shadow-md transition-shadow">
+            <Card key={relationship.farmer?._id || Math.random()} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={relationship.farmer.avatar} />
+                      <AvatarImage src={relationship.farmer?.avatar} />
                       <AvatarFallback>
-                        {relationship.farmer.firstName[0]}{relationship.farmer.lastName[0]}
+                        {relationship.farmer?.firstName?.[0] || 'F'}{relationship.farmer?.lastName?.[0] || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-lg">
-                          {relationship.farmer.firstName} {relationship.farmer.lastName}
+                          {relationship.farmer?.firstName || 'Unknown'} {relationship.farmer?.lastName || ''}
                         </h3>
                         <Badge variant="outline">
-                          {relationship.farmer.farmerProfile.verificationStatus}
+                          {relationship.farmer?.farmerProfile?.verificationStatus || 'pending'}
                         </Badge>
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          <span>{relationship.farmer.farmerProfile.farmName}</span>
+                          <span>{relationship.farmer?.farmerProfile?.farmName || 'Unknown Farm'}</span>
                         </div>
                         <div>
-                          {relationship.farmer.farmerProfile.location.county}, {relationship.farmer.farmerProfile.location.subCounty}
+                          {relationship.farmer?.farmerProfile?.location?.county || 'N/A'}, {relationship.farmer?.farmerProfile?.location?.subCounty || 'N/A'}
                         </div>
                         <div>
-                          {relationship.farmer.farmerProfile.farmingType.join(', ')}
+                          {relationship.farmer?.farmerProfile?.farmingType?.join(', ') || 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -248,33 +248,33 @@ const InvestorFarmerRelationships = () => {
                 <div className="space-y-3">
                   <h4 className="font-medium text-foreground">Investors:</h4>
                   <div className="grid gap-3">
-                    {relationship.investors.map((investor, index) => (
+                    {relationship.investors?.map((investor, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={investor.adopter.avatar} />
+                            <AvatarImage src={investor.adopter?.avatar} />
                             <AvatarFallback className="text-xs">
-                              {investor.adopter.firstName[0]}{investor.adopter.lastName[0]}
+                              {investor.adopter?.firstName?.[0] || 'I'}{investor.adopter?.lastName?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           
                           <div>
                             <p className="font-medium text-sm">
-                              {investor.adopter.firstName} {investor.adopter.lastName}
+                              {investor.adopter?.firstName || 'Unknown'} {investor.adopter?.lastName || ''}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {investor.adopter.email}
+                              {investor.adopter?.email || 'No email'}
                             </p>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <div className="text-right">
-                            <Badge className={getAdoptionStatusColor(investor.adoption.status)}>
-                              {investor.adoption.status}
+                            <Badge className={getAdoptionStatusColor(investor.adoption?.status || 'pending')}>
+                              {investor.adoption?.status || 'pending'}
                             </Badge>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {formatDate(investor.adoption.startDate)}
+                              {investor.adoption?.startDate ? formatDate(investor.adoption.startDate) : 'N/A'}
                             </p>
                           </div>
                           

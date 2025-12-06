@@ -73,7 +73,8 @@ const FarmerExpertChat = () => {
     setShowMessaging(true);
   };
 
-  const getSpecializationColor = (specialization: string) => {
+  const getSpecializationColor = (specialization: string | undefined | null) => {
+    if (!specialization) return 'bg-gray-100 text-gray-800';
     const colors = {
       'crop_management': 'bg-green-100 text-green-800',
       'soil_health': 'bg-amber-100 text-amber-800',
@@ -89,11 +90,13 @@ const FarmerExpertChat = () => {
     return colors[specialization as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const formatSpecialization = (specialization: string) => {
+  const formatSpecialization = (specialization: string | undefined | null) => {
+    if (!specialization) return 'General';
     return specialization.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const getGoalStatusColor = (status: string) => {
+  const getGoalStatusColor = (status: string | undefined | null) => {
+    if (!status) return 'text-gray-600';
     switch (status) {
       case 'completed':
         return 'text-green-600';
@@ -106,7 +109,8 @@ const FarmerExpertChat = () => {
     }
   };
 
-  const formatGoalStatus = (status: string) => {
+  const formatGoalStatus = (status: string | undefined | null) => {
+    if (!status) return 'Pending';
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
@@ -148,32 +152,39 @@ const FarmerExpertChat = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {experts.map((expert) => (
+        {experts.map((expert) => {
+          // Handle different data structures - expert might have user object or direct fields
+          const firstName = expert.firstName || (expert as any).user?.firstName || 'Unknown';
+          const lastName = expert.lastName || (expert as any).user?.lastName || '';
+          const avatar = expert.avatar || (expert as any).user?.avatar?.url || (expert as any).user?.avatar;
+          const email = expert.email || (expert as any).user?.email || '';
+          
+          return (
           <Card key={expert._id} className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={expert.avatar} />
+                    <AvatarImage src={avatar} />
                     <AvatarFallback className="text-lg">
-                      {expert.firstName.charAt(0)}{expert.lastName.charAt(0)}
+                      {firstName?.charAt(0) || 'U'}{lastName?.charAt(0) || ''}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <CardTitle className="text-xl mb-1">
-                      {expert.firstName} {expert.lastName}
+                      {firstName} {lastName}
                     </CardTitle>
                     <Badge className={`${getSpecializationColor(expert.specialization)}`}>
                       {formatSpecialization(expert.specialization)}
                     </Badge>
                     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
                       <Calendar className="h-4 w-4" />
-                      <span>Started {new Date(expert.startDate).toLocaleDateString()}</span>
+                      <span>Started {expert.startDate ? new Date(expert.startDate).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
                 <Badge variant="outline" className="text-green-600 border-green-600">
-                  {expert.status}
+                  {expert.status || 'Active'}
                 </Badge>
               </div>
             </CardHeader>
@@ -187,7 +198,7 @@ const FarmerExpertChat = () => {
                     Goals Progress
                   </h4>
                   <span className="text-sm font-medium">
-                    {expert.completedGoals}/{expert.totalGoals} completed
+                    {expert.completedGoals || 0}/{expert.totalGoals || 0} completed
                   </span>
                 </div>
                 <Progress 
@@ -197,15 +208,15 @@ const FarmerExpertChat = () => {
               </div>
 
               {/* Recent Goals */}
-              {expert.goals.length > 0 && (
+              {expert.goals && expert.goals.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm">Recent Goals</h4>
                   <div className="space-y-2">
                     {expert.goals.slice(0, 3).map((goal, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{goal.title}</p>
-                          <p className="text-xs text-gray-500">{goal.description}</p>
+                          <p className="text-sm font-medium">{goal.title || 'Untitled Goal'}</p>
+                          <p className="text-xs text-gray-500">{goal.description || ''}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {goal.status === 'completed' ? (
@@ -245,12 +256,12 @@ const FarmerExpertChat = () => {
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                 <div className="text-center">
-                  <p className="text-lg font-bold text-green-600">{expert.completedGoals}</p>
+                  <p className="text-lg font-bold text-green-600">{expert.completedGoals || 0}</p>
                   <p className="text-xs text-gray-500">Goals Achieved</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-blue-600">
-                    {Math.round(((new Date().getTime() - new Date(expert.startDate).getTime()) / (1000 * 60 * 60 * 24)))}
+                    {expert.startDate ? Math.max(0, Math.round(((new Date().getTime() - new Date(expert.startDate).getTime()) / (1000 * 60 * 60 * 24)))) : 0}
                   </p>
                   <p className="text-xs text-gray-500">Days Mentored</p>
                 </div>
@@ -264,7 +275,8 @@ const FarmerExpertChat = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Messaging Dialog */}

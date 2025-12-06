@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,16 +23,53 @@ const ProtectedRoute = ({
   const { user, loading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
+  const hasShownToast = useRef(false);
+
+  // Determine access denial reason
+  const getAccessDenialReason = () => {
+    if (!isAuthenticated || !user) {
+      return { denied: false, reason: '', description: '' };
+    }
+    if (requireAdmin && user.role !== 'admin') {
+      return { denied: true, reason: 'Access denied', description: "You don't have permission to access this page" };
+    }
+    if (requireFarmer && user.role !== 'farmer') {
+      return { denied: true, reason: 'Access denied', description: 'This page is only accessible to farmers' };
+    }
+    if (requireAdopter && user.role !== 'adopter') {
+      return { denied: true, reason: 'Access denied', description: 'This page is only accessible to adopters' };
+    }
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+      return { denied: true, reason: 'Access denied', description: "You don't have permission to access this page" };
+    }
+    return { denied: false, reason: '', description: '' };
+  };
+
+  const accessDenial = getAccessDenialReason();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    // Show toast for unauthenticated users
+    if (!loading && !isAuthenticated && !hasShownToast.current) {
+      hasShownToast.current = true;
       toast({
         title: "Authentication required",
         description: "Please log in to access this page",
         variant: "destructive",
       });
     }
-  }, [user, loading, isAuthenticated, toast]);
+  }, [loading, isAuthenticated, toast]);
+
+  useEffect(() => {
+    // Show toast for access denied
+    if (!loading && accessDenial.denied && !hasShownToast.current) {
+      hasShownToast.current = true;
+      toast({
+        title: accessDenial.reason,
+        description: accessDenial.description,
+        variant: "destructive",
+      });
+    }
+  }, [loading, accessDenial, toast]);
 
   if (loading) {
     return (
@@ -52,39 +89,19 @@ const ProtectedRoute = ({
 
   // Check role-based access
   if (requireAdmin && user.role !== 'admin') {
-    toast({
-      title: "Access denied",
-      description: "You don't have permission to access this page",
-      variant: "destructive",
-    });
-    return <Navigate to="/auth/login" />;
+    return <Navigate to="/" />;
   }
 
   if (requireFarmer && user.role !== 'farmer') {
-    toast({
-      title: "Access denied",
-      description: "This page is only accessible to farmers",
-      variant: "destructive",
-    });
-    return <Navigate to="/auth/login" />;
+    return <Navigate to="/" />;
   }
 
   if (requireAdopter && user.role !== 'adopter') {
-    toast({
-      title: "Access denied", 
-      description: "This page is only accessible to adopters",
-      variant: "destructive",
-    });
-    return <Navigate to="/auth/login" />;
+    return <Navigate to="/" />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    toast({
-      title: "Access denied",
-      description: "You don't have permission to access this page",
-      variant: "destructive",
-    });
-    return <Navigate to="/auth/login" />;
+    return <Navigate to="/" />;
   }
 
   return <>{children}</>;

@@ -52,6 +52,7 @@ import VerificationManagement from "./pages/admin/VerificationManagement";
 import ExpertsManagement from "./pages/admin/ExpertsManagement";
 import DocumentVerification from "./pages/admin/DocumentVerification";
 import AdoptionManagement from "./pages/admin/AdoptionManagement";
+import UsersManagement from "./pages/admin/UsersManagement";
 
 // Adopter pages
 import AdopterDashboard from "./pages/adopter/AdopterDashboard";
@@ -94,7 +95,9 @@ const AppContent = () => {
       
       {/* Auth Routes */}
       <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/register" element={<SignupFlow />} />
+      <Route path="/auth/register" element={<Register />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/auth/verify-email" element={<VerifyEmailOTP />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
@@ -130,6 +133,7 @@ const AppContent = () => {
         <Route path="payments" element={<PaymentsManagement />} />
         <Route path="suppliers" element={<SuppliersManagement />} />
         <Route path="analytics" element={<AnalyticsManagement />} />
+        <Route path="users" element={<UsersManagement />} />
         <Route path="settings" element={<SettingsManagement />} />
       </Route>
 

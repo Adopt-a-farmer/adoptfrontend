@@ -79,16 +79,16 @@ const KnowledgeHub = () => {
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(article =>
-        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        article.title?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        article.excerpt?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        article.tags?.some(tag => tag?.toLowerCase()?.includes(searchTerm.toLowerCase()))
       );
     }
 
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(article => 
-        article.category.toLowerCase() === selectedCategory.toLowerCase()
+        article.category?.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
 
@@ -283,19 +283,19 @@ const KnowledgeHub = () => {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {article.author.avatar_url && (
+                      {article.author?.avatar_url && (
                         <img
                           src={article.author.avatar_url}
-                          alt={`${article.author.firstName} ${article.author.lastName}`}
+                          alt={`${article.author?.firstName || 'Author'} ${article.author?.lastName || ''}`}
                           className="w-6 h-6 rounded-full"
                         />
                       )}
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {article.author.firstName} {article.author.lastName}
+                          {article.author?.firstName || 'Unknown'} {article.author?.lastName || 'Author'}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(article.createdAt), { addSuffix: true })}
+                          {article.createdAt ? formatDistanceToNow(new Date(article.createdAt), { addSuffix: true }) : 'N/A'}
                         </p>
                       </div>
                     </div>

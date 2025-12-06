@@ -11,7 +11,8 @@ import {
   UserCheck,
   Heart,
   GraduationCap,
-  CheckCircle
+  CheckCircle,
+  UserPlus
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -23,6 +24,7 @@ const AdminSidebar = () => {
     { name: 'Farmers', href: '/admin/farmers', icon: Users },
     { name: 'Experts', href: '/admin/experts', icon: GraduationCap },
     { name: 'Adopters', href: '/admin/adopters', icon: UserCheck },
+    { name: 'Users Management', href: '/admin/users', icon: UserPlus },
     { name: 'Adoptions', href: '/admin/adoptions', icon: Heart },
     { name: 'Payments', href: '/admin/payments', icon: DollarSign },
     { name: 'Suppliers', href: '/admin/suppliers', icon: Package },

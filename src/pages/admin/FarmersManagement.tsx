@@ -1,14 +1,14 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Users, CheckCircle, Clock, AlertCircle, Eye, MapPin } from 'lucide-react';
+import { Plus, Search, Users, CheckCircle, Clock, AlertCircle, Eye, MapPin, ExternalLink, Satellite } from 'lucide-react';
 import { adminService, FarmerProfile } from '@/services/admin';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
+import { getAzureMapsSatelliteLink } from '@/utils/mapHelpers';
 
 const FarmersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +19,7 @@ const FarmersManagement = () => {
   const { toast } = useToast();
   
   // Fetch farmers data using admin service
-  const { data: farmersData, isLoading, error, refetch } = useQuery({
+  const { data: farmersData, isLoading, error, refetch, isPlaceholderData } = useQuery({
     queryKey: ['admin-farmers', currentPage, searchTerm, statusFilter],
     queryFn: () => adminService.getAllFarmers({
       page: currentPage,
@@ -27,7 +27,7 @@ const FarmersManagement = () => {
       search: searchTerm || undefined,
       status: statusFilter !== 'all' ? statusFilter : undefined
     }),
-    keepPreviousData: true
+    placeholderData: (previousData) => previousData
   });
 
   // Fetch dashboard stats for better counts
@@ -36,8 +36,9 @@ const FarmersManagement = () => {
     queryFn: () => adminService.getDashboardStats(),
   });
 
-  const farmers = Array.isArray(farmersData?.data) ? farmersData.data : [];
-  const totalPages = farmersData?.totalPages || 1;
+  const farmers = Array.isArray(farmersData?.data) ? farmersData.data : 
+                 (farmersData?.data?.farmers ? farmersData.data.farmers : []);
+  const totalPages = farmersData?.data?.pagination?.pages || 1;
 
   const handleViewFarmer = async (farmerId: string) => {
     try {
@@ -391,6 +392,52 @@ const FarmersManagement = () => {
                       <span className="text-sm text-muted-foreground">Farm Size:</span>
                       <span className="font-medium">{selectedFarmer.farmSize?.value} {selectedFarmer.farmSize?.unit}</span>
                     </div>
+                    
+                    {/* Farm Location Coordinates and Satellite View */}
+                    {selectedFarmer.location?.coordinates?.latitude && selectedFarmer.location?.coordinates?.longitude && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-medium text-blue-900 flex items-center">
+                              <Satellite className="h-4 w-4 mr-2" />
+                              GPS Coordinates
+                            </p>
+                            <p className="text-sm text-blue-700 font-mono mt-1">
+                              {selectedFarmer.location.coordinates.latitude.toFixed(6)}, {selectedFarmer.location.coordinates.longitude.toFixed(6)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          onClick={() => {
+                            const url = getAzureMapsSatelliteLink(
+                              selectedFarmer.location!.coordinates!.latitude!,
+                              selectedFarmer.location!.coordinates!.longitude!
+                            );
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          <Satellite className="h-4 w-4 mr-2" />
+                          View Satellite Imagery
+                          <ExternalLink className="h-3 w-3 ml-2" />
+                        </Button>
+                        <p className="text-xs text-blue-600 mt-2 text-center">
+                          Opens satellite view to verify farm location
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* No Coordinates Available */}
+                    {(!selectedFarmer.location?.coordinates?.latitude || !selectedFarmer.location?.coordinates?.longitude) && (
+                      <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                          <AlertCircle className="h-4 w-4 inline mr-2" />
+                          GPS coordinates not provided. Ask the farmer to update their location.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

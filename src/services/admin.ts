@@ -93,6 +93,11 @@ export interface FarmerProfile {
     county: string;
     subCounty: string;
     village?: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+    formattedAddress?: string;
   };
   farmSize: {
     value: number;
@@ -358,6 +363,11 @@ export const adminService = {
     profileData?: Record<string, unknown>;
   }) {
     const response = await api.post('/admin/users', userData);
+    return response.data;
+  },
+
+  async deleteUser(userId: string): Promise<{ success: boolean; message: string; data: { deletedUser: { id: string; email: string; role: string; name: string } } }> {
+    const response = await api.delete(`/admin/users/${userId}`);
     return response.data;
   },
 

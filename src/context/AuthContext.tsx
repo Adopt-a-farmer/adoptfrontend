@@ -16,6 +16,9 @@ export interface User {
   avatar_url?: string;
   createdAt: string;
   updatedAt: string;
+  requiresPhoneNumber?: boolean;
+  googleId?: string;
+  authProvider?: 'local' | 'google';
   [key: string]: unknown;
 }
 
@@ -50,6 +53,7 @@ type AuthContextType = {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  requiresPhoneNumber: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (userData: SignUpData) => Promise<{ token: string; refreshToken?: string; user: User } | void>;
   signOut: () => Promise<void>;
@@ -57,6 +61,7 @@ type AuthContextType = {
   resetPassword: (token: string, password: string) => Promise<void>;
   updateProfile?: (profileData: ProfileUpdateData) => Promise<void>;
   changePassword?: (oldPassword: string, newPassword: string) => Promise<void>;
+  setRequiresPhoneNumber?: (value: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [requiresPhoneNumber, setRequiresPhoneNumber] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -360,6 +366,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading,
     isAuthenticated,
     isAdmin,
+    requiresPhoneNumber,
     signIn,
     signUp,
     signOut,
@@ -367,6 +374,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resetPassword,
     updateProfile,
     changePassword,
+    setRequiresPhoneNumber,
   };
 
   return (

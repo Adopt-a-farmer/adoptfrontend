@@ -396,7 +396,7 @@ const ExpertFarmerCard = ({
               <div className="space-y-4 pt-4">
                 <div className="flex items-center space-x-4">
                   <img 
-                    src={farmer.farmImages[0] || defaultImage} 
+                    src={farmer.farmImages?.[0] || defaultImage} 
                     alt={farmer.farmName}
                     className="w-16 h-16 rounded-full object-cover"
                   />
